@@ -103,18 +103,25 @@
 
 - 推荐
   ```bash
-  pip3 install pipx
+  uv tool install ktoolbox
   
+- 从源码仓库安装
+  ```bash
+  uv sync
+  uv run ktoolbox --help
+  ```
+
+- 带可选依赖
+  ```bash
+  uv tool install "ktoolbox[urwid,uvloop]"
   # Windows
-  pipx install ktoolbox[urwid,winloop]
-  # Linux / macOS
-  pipx install ktoolbox[urwid,uvloop]
+  uv tool install "ktoolbox[urwid,winloop]"
   ```
 
 - 对于 iOS [a-Shell](https://github.com/holzschu/a-shell) 或 [pyodide](https://pyodide.org/en/stable/)，
 或者如果你只能使用纯Python，无法编译 [pydantic](https://docs.pydantic.dev/latest/) v2.x.x
   ```bash
-  pip3 install ktoolbox-pure-py
+  uv tool install ktoolbox-pure-py
   ```
 
 ### 命令

@@ -80,23 +80,20 @@ You can use executables from [releases](https://github.com/Ljzd-PRO/KToolBox/rel
 === "Normal"
     Recommend to use pipx
     ```bash
-    pip3 install pipx
-    # Windows
-    pipx install ktoolbox[urwid,winloop]
+    uv tool install "ktoolbox[urwid,winloop]"
     # Linux / macOS
-    pipx install ktoolbox[urwid,uvloop]
+    uv tool install "ktoolbox[urwid,uvloop]"
     ```
 
 === "Pure Python"
     If you are using pyodide, or you can only use pure Python and you cannot compile [pydantic](https://docs.pydantic.dev/latest/) v2.x.x
     ```bash
-    pip3 install pipx
-    pipx install ktoolbox-pure-py
+    uv tool install ktoolbox-pure-py
     ```
 
 === "For iOS a-Shell"
     ```bash
-    pip3 install ktoolbox-pure-py
+    uv tool install ktoolbox-pure-py
     ```
     !!! info "About a-Shell"
         [a-Shell](https://github.com/holzschu/a-shell) is an iOS terminal App, 

@@ -102,18 +102,25 @@ Manually install:
 
 - Recommend
   ```bash
-  pip3 install pipx
+  uv tool install ktoolbox
   
+- From a checkout
+  ```bash
+  uv sync
+  uv run ktoolbox --help
+  ```
+
+- With optional extras
+  ```bash
+  uv tool install "ktoolbox[urwid,uvloop]"
   # Windows
-  pipx install "ktoolbox[urwid,winloop]"
-  # Linux / macOS
-  pipx install "ktoolbox[urwid,uvloop]"
+  uv tool install "ktoolbox[urwid,winloop]"
   ```
 
 - For [a-Shell](https://github.com/holzschu/a-shell) or [pyodide](https://pyodide.org/en/stable/), 
   or if you can only use pure Python and you cannot compile [pydantic](https://docs.pydantic.dev/latest/) v2.x.x
   ```bash
-  pip3 install ktoolbox-pure-py
+  uv tool install ktoolbox-pure-py
   ```
 
 ### Command

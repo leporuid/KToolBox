@@ -15,12 +15,12 @@ KToolBox now supports platform-specific event loop optimization:
 
 === "Windows"
     ```bash
-    pip install ktoolbox[winloop]
+    uv tool install "ktoolbox[winloop]"
     ```
 
 === "Linux/macOS"
     ```bash
-    pip install ktoolbox[uvloop]
+    uv tool install "ktoolbox[uvloop]"
     ```
 
 If you failed installing uvloop on Linux or macOS, you can try to install it with system package manager like **apt**, **yum** or **brew**, as package managers provide prebuilt wheels for uvloop.
