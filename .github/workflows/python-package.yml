@@ -16,8 +16,8 @@ jobs:
       - name: Setup Python environment
         uses: ./.github/actions/setup-python
 
-      - name: Build package with Poetry
-        run: poetry build
+      - name: Build package with uv
+        run: uv build
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v4
@@ -86,10 +86,11 @@ jobs:
             -w /workspace \
             python:3.13-slim-bullseye \
             bash -c "
-              apt-get update && apt-get install -y git binutils &&
-              pip install poetry &&
-              poetry install --with pyinstaller --extras urwid --extras uvloop &&
-              poetry run pyinstaller ktoolbox.spec --distpath dist &&
+              apt-get update && apt-get install -y git binutils curl &&
+              curl -LsSf https://astral.sh/uv/install.sh | sh &&
+              export PATH=\"\$HOME/.local/bin:\$PATH\" &&
+              uv sync --group pyinstaller --extra urwid --extra uvloop &&
+              uv run pyinstaller ktoolbox.spec --distpath dist &&
               cp README.md README_zh-CN.md example.env .env LICENSE dist/
             "
 

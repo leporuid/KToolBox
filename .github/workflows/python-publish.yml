@@ -16,10 +16,10 @@ jobs:
       - name: Setup Python environment
         uses: ./.github/actions/setup-python
 
-      - name: Build package with Poetry
-        run: poetry build
+      - name: Build package with uv
+        run: uv build
 
-      - name: Publish package with Poetry
-        run: |
-          poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
-          poetry publish
+      - name: Publish package with uv
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
