@@ -14,15 +14,13 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install poetry
-      run: pipx install poetry
-      shell: bash
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
         architecture: ${{ inputs.architecture }}
-        cache: "poetry"
 
-    - run: poetry install --with test,docs,pyinstaller --extras urwid --extras ${{ runner.os == 'Windows' && 'winloop' || 'uvloop' }}
+    - run: uv sync --group test --group docs --group pyinstaller --extra urwid --extra ${{ runner.os == 'Windows' && 'winloop' || 'uvloop' }}
       shell: bash
