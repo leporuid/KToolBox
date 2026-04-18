@@ -4,15 +4,18 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     uv2nix = {
       url = "github:pyproject-nix/uv2nix";
       inputs.pyproject-nix.follows = "pyproject-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     pyproject-build-systems = {
       url = "github:pyproject-nix/build-system-pkgs";
       inputs.pyproject-nix.follows = "pyproject-nix";
@@ -22,89 +25,54 @@
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-      pyproject-nix,
-      uv2nix,
-      pyproject-build-systems,
-    }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
+    { self, nixpkgs, flake-utils, pyproject-nix, uv2nix, pyproject-build-systems }:
+    flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         python = pkgs.python312;
 
-        workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+        workspace = uv2nix.lib.workspace.loadWorkspace {
+          workspaceRoot = ./.;
+        };
 
         overlay = workspace.mkPyprojectOverlay {
           sourcePreference = "wheel";
         };
 
-        pythonSet =
-          (pkgs.callPackage pyproject-nix.build.packages { inherit python; }).overrideScope
-            (
-              pkgs.lib.composeManyExtensions [
-                pyproject-build-systems.overlays.default
-                overlay
-              ]
-            );
-
-        # Runtime package (no dev/test extras)
-        ktoolbox = pythonSet.mkVirtualEnv "ktoolbox-env" workspace.deps.default;
-
-        # Dev environment with test + dev groups
-        devEnv = pythonSet.mkVirtualEnv "ktoolbox-dev-env" (
-          workspace.deps.default
-          // {
-            ktoolbox = [ ];
-          }
-          // workspace.deps.groups.test or { }
-          // workspace.deps.groups.dev or { }
+        pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
+          inherit python;
+        }).overrideScope (
+          pkgs.lib.composeManyExtensions [
+            pyproject-build-systems.overlays.default
+            overlay
+          ]
         );
+
+        runtimeEnv = pythonSet.mkVirtualEnv "ktoolbox-env" workspace.deps.default;
       in
       {
-        packages = {
-          default = ktoolbox;
-          ktoolbox = ktoolbox;
-        };
+        packages.default = runtimeEnv;
+        packages.ktoolbox = runtimeEnv;
 
         apps.default = {
           type = "app";
-          program = "${ktoolbox}/bin/ktoolbox";
+          program = "${runtimeEnv}/bin/ktoolbox";
         };
 
-        devShells = {
-          default = pkgs.mkShell {
-            packages = [
-              devEnv
-              pkgs.uv
-            ];
+        devShells.default = pkgs.mkShell {
+          packages = [
+            python
+            pkgs.uv
+          ];
 
-            env = {
-              # Prevent uv from trying to manage Python itself
-              UV_PYTHON_DOWNLOADS = "never";
-              UV_PYTHON = python.interpreter;
-            };
-
-            shellHook = ''
-              unset PYTHONPATH
-            '';
+          env = {
+            UV_PYTHON_DOWNLOADS = "never";
+            UV_PYTHON = python.interpreter;
           };
 
-          # Impure shell: uv manages its own venv, Nix only provides uv + Python
-          impure = pkgs.mkShell {
-            packages = [
-              python
-              pkgs.uv
-            ];
-
-            env = {
-              UV_PYTHON_DOWNLOADS = "never";
-            };
-          };
+          shellHook = ''
+            unset PYTHONPATH
+          '';
         };
-      }
-    );
+      });
 }
