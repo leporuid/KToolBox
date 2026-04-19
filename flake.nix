@@ -24,19 +24,19 @@
     };
   };
 
-  outputs =
-    { self, nixpkgs, flake-utils, pyproject-nix, uv2nix, pyproject-build-systems }:
+  outputs = { self, nixpkgs, flake-utils, pyproject-nix, uv2nix, pyproject-build-systems }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         python = pkgs.python312;
 
         workspace = uv2nix.lib.workspace.loadWorkspace {
-          workspaceRoot = ./.;
+          workspaceRoot = ./KToolBox;
         };
 
         overlay = workspace.mkPyprojectOverlay {
           sourcePreference = "wheel";
+          extras = [ "full" ];   # <--- Use a list here!
         };
 
         pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
@@ -48,6 +48,7 @@
           ]
         );
 
+        # If you want a virtualenv package:
         runtimeEnv = pythonSet.mkVirtualEnv "ktoolbox-env" workspace.deps.default;
       in
       {
@@ -74,5 +75,6 @@
             unset PYTHONPATH
           '';
         };
-      });
+      }
+    );
 }
