@@ -31,7 +31,7 @@
         python = pkgs.python312;
 
         workspace = uv2nix.lib.workspace.loadWorkspace {
-          workspaceRoot = ./KToolBox;
+          workspaceRoot = ./.;
         };
 
         overlay = workspace.mkPyprojectOverlay {
