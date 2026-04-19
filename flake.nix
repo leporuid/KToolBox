@@ -36,7 +36,9 @@
 
         overlay = workspace.mkPyprojectOverlay {
           sourcePreference = "wheel";
-          extras = [ "full" ];   # <--- Use a list here!
+          dependencies = {
+    	  ktoolbox = [ "full" ];
+  	};
         };
 
         pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
