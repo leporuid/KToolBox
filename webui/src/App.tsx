@@ -6,7 +6,6 @@ import {
   Download,
   Edit3,
   FileDown,
-  ListChecks,
   Menu,
   Moon,
   Plus,
@@ -39,14 +38,31 @@ import {
 } from "@heroui/react";
 import { apiFetch, readToken, type ConfigField, type ConfigSchema, type EditableJob, type WebTask } from "./api";
 
-type ViewKey = "tasks" | "config" | "activity";
+type ViewKey = "post-download" | "artist-sync" | "config" | "activity";
 type ThemeMode = "light" | "dark";
 
-const navItems: Array<{ key: ViewKey; label: string; icon: ReactNode }> = [
-  { key: "tasks", label: "任务队列", icon: <ListChecks size={18} /> },
-  { key: "config", label: "Env 配置", icon: <Settings size={18} /> },
-  { key: "activity", label: "运行日志", icon: <Activity size={18} /> }
+const navItems: Array<{ key: ViewKey; path: string; label: string; icon: ReactNode }> = [
+  { key: "post-download", path: "/post-download", label: "Post 下载", icon: <FileDown size={18} /> },
+  { key: "artist-sync", path: "/artist-sync", label: "Artist 同步", icon: <Users size={18} /> },
+  { key: "config", path: "/config", label: "Env 配置", icon: <Settings size={18} /> },
+  { key: "activity", path: "/activity", label: "运行日志", icon: <Activity size={18} /> }
 ];
+
+function viewFromPath(pathname: string): ViewKey {
+  const match = navItems.find((item) => item.path === pathname);
+  if (match) return match.key;
+  return "post-download";
+}
+
+function pathForView(view: ViewKey) {
+  return navItems.find((item) => item.key === view)?.path || "/post-download";
+}
+
+function urlForView(view: ViewKey) {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.pathname = pathForView(view);
+  return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+}
 
 const defaultPostForm = {
   kind: "post_download",
@@ -79,10 +95,6 @@ const defaultCreatorForm = {
 
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : String(error);
-}
-
-function tokenHeaders(token: string) {
-  return { "X-KToolBox-Token": token };
 }
 
 function Field(props: { label: string; hint?: string; children: ReactNode }) {
@@ -152,7 +164,7 @@ function StatusChip({ status }: { status: WebTask["status"] }) {
 function KindChip({ kind }: { kind: WebTask["kind"] }) {
   return (
     <Chip size="sm" variant="soft" color={kind === "post_download" ? "accent" : "success"}>
-      {kind === "post_download" ? "Post 下载" : "作者同步"}
+      {kind === "post_download" ? "Post 下载" : "Artist 同步"}
     </Chip>
   );
 }
@@ -202,7 +214,7 @@ function NavContent(props: { view: ViewKey; onView: (view: ViewKey) => void }) {
   return (
     <nav className="grid gap-2">
       {navItems.map((item) => (
-        <Button key={item.key} variant="ghost" className="nav-button" data-active={props.view === item.key} onPress={() => props.onView(item.key)}>
+        <Button key={item.key} variant="ghost" className="nav-button" data-active={props.view === item.key} data-path={item.path} onPress={() => props.onView(item.key)}>
           {item.icon}
           {item.label}
         </Button>
@@ -333,13 +345,13 @@ function renderConfigControl(field: ConfigField, value: unknown, onChange: (valu
   );
 }
 
-function TaskCreatePanel(props: { onCreate: (kind: WebTask["kind"], params: Record<string, unknown>, title?: string) => void; isLoading: boolean }) {
-  const [kind, setKind] = useState<WebTask["kind"]>("post_download");
+function TaskCreatePanel(props: { kind: WebTask["kind"]; onCreate: (kind: WebTask["kind"], params: Record<string, unknown>, title?: string) => void; isLoading: boolean }) {
   const [postForm, setPostForm] = useState(defaultPostForm);
   const [creatorForm, setCreatorForm] = useState(defaultCreatorForm);
-  const form = kind === "post_download" ? postForm : creatorForm;
+  const isPost = props.kind === "post_download";
+  const form = isPost ? postForm : creatorForm;
   const setField = (key: string, value: unknown) => {
-    if (kind === "post_download") setPostForm({ ...postForm, [key]: value });
+    if (isPost) setPostForm({ ...postForm, [key]: value });
     else setCreatorForm({ ...creatorForm, [key]: value });
   };
 
@@ -348,26 +360,18 @@ function TaskCreatePanel(props: { onCreate: (kind: WebTask["kind"], params: Reco
     delete (params as Record<string, unknown>).kind;
     const title = String((params as Record<string, unknown>).title || "");
     delete (params as Record<string, unknown>).title;
-    props.onCreate(kind, params, title || undefined);
+    props.onCreate(props.kind, params, title || undefined);
   };
 
   return (
     <Surface variant="secondary" className="toolbar-surface grid gap-3 p-3">
-      <div className="grid gap-3 lg:grid-cols-[13rem_minmax(0,1fr)]">
-        <Field label="任务类型">
-          <AppSelect
-            value={kind}
-            ariaLabel="任务类型"
-            onChange={(value) => setKind(value as WebTask["kind"])}
-            options={[
-              { value: "post_download", label: "Post 下载" },
-              { value: "creator_sync", label: "作者同步" }
-            ]}
-          />
-        </Field>
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <Field label="任务名称">
           <Input className="textfield" variant="secondary" value={String(form.title)} placeholder="可选，留空自动生成" onChange={(event) => setField("title", event.target.value)} />
         </Field>
+        <Chip color={isPost ? "accent" : "success"} variant="soft">
+          {isPost ? "Post 下载" : "Artist 同步"}
+        </Chip>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -377,10 +381,10 @@ function TaskCreatePanel(props: { onCreate: (kind: WebTask["kind"], params: Reco
         <Field label="Service">
           <Input className="textfield" variant="secondary" value={String(form.service)} placeholder="fanbox / patreon" onChange={(event) => setField("service", event.target.value)} />
         </Field>
-        <Field label="Creator ID">
+        <Field label={isPost ? "Creator ID" : "Artist ID"}>
           <Input className="textfield" variant="secondary" value={String(form.creator_id)} onChange={(event) => setField("creator_id", event.target.value)} />
         </Field>
-        {kind === "post_download" ? (
+        {isPost ? (
           <Field label="Post ID">
             <Input className="textfield" variant="secondary" value={String(postForm.post_id)} onChange={(event) => setField("post_id", event.target.value)} />
           </Field>
@@ -392,7 +396,7 @@ function TaskCreatePanel(props: { onCreate: (kind: WebTask["kind"], params: Reco
         <Field label="保存路径">
           <Input className="textfield" variant="secondary" value={String(form.path)} onChange={(event) => setField("path", event.target.value)} />
         </Field>
-        {kind === "post_download" ? (
+        {isPost ? (
           <Field label="Revision ID">
             <Input className="textfield" variant="secondary" value={String(postForm.revision_id)} onChange={(event) => setField("revision_id", event.target.value)} />
           </Field>
@@ -413,7 +417,7 @@ function TaskCreatePanel(props: { onCreate: (kind: WebTask["kind"], params: Reco
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {kind === "post_download" ? (
+          {isPost ? (
             <Switch.Root isSelected={Boolean(postForm.dump_post_data)} onChange={(value) => setField("dump_post_data", value)}>
               <Switch.Content className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold">
                 <FileDown size={16} />
@@ -424,12 +428,24 @@ function TaskCreatePanel(props: { onCreate: (kind: WebTask["kind"], params: Reco
             <>
               <Input className="w-56" variant="secondary" value={String(creatorForm.keywords)} placeholder="包含关键词，逗号分隔" onChange={(event) => setField("keywords", event.target.value)} />
               <Input className="w-56" variant="secondary" value={String(creatorForm.keywords_exclude)} placeholder="排除关键词，逗号分隔" onChange={(event) => setField("keywords_exclude", event.target.value)} />
+              <Switch.Root isSelected={Boolean(creatorForm.save_creator_indices)} onChange={(value) => setField("save_creator_indices", value)}>
+                <Switch.Content className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold">
+                  <Users size={16} />
+                  保存索引
+                </Switch.Content>
+              </Switch.Root>
+              <Switch.Root isSelected={Boolean(creatorForm.mix_posts)} onChange={(value) => setField("mix_posts", value)}>
+                <Switch.Content className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold">
+                  <FileDown size={16} />
+                  混合帖子
+                </Switch.Content>
+              </Switch.Root>
             </>
           )}
         </div>
         <Button variant="primary" isPending={props.isLoading} onPress={submit}>
           <Plus size={16} />
-          加入队列
+          {isPost ? "创建 Post 下载" : "创建 Artist 同步"}
         </Button>
       </div>
     </Surface>
@@ -438,6 +454,7 @@ function TaskCreatePanel(props: { onCreate: (kind: WebTask["kind"], params: Reco
 
 function TaskTable(props: {
   tasks: WebTask[];
+  label: string;
   onEdit: (task: WebTask) => void;
   onMaterialize: (task: WebTask) => void;
   onStart: (task: WebTask) => void;
@@ -450,8 +467,8 @@ function TaskTable(props: {
       <div className="surface-frame grid min-h-56 place-items-center p-8 text-center">
         <div>
           <Download className="mx-auto mb-3 text-[var(--app-accent)]" size={34} />
-          <div className="text-base font-semibold">队列为空</div>
-          <p className="m-0 mt-1 text-sm text-[var(--app-muted)]">创建 Post 下载或作者同步任务后，会在这里进行编辑和管理。</p>
+          <div className="text-base font-semibold">暂无 {props.label} 任务</div>
+          <p className="m-0 mt-1 text-sm text-[var(--app-muted)]">创建任务后，会在这里进行编辑和管理。</p>
         </div>
       </div>
     );
@@ -461,7 +478,7 @@ function TaskTable(props: {
     <>
       <Table className="hidden md:block">
         <Table.ScrollContainer className="table__wrapper">
-          <Table.Content aria-label="任务队列">
+          <Table.Content aria-label={`${props.label}任务`}>
             <Table.Header>
               <Table.Column>任务</Table.Column>
               <Table.Column>类型</Table.Column>
@@ -519,6 +536,53 @@ function TaskTable(props: {
         ))}
       </div>
     </>
+  );
+}
+
+function TaskPage(props: {
+  kind: WebTask["kind"];
+  label: string;
+  icon: ReactNode;
+  tasks: WebTask[];
+  isLoading: boolean;
+  onCreate: (kind: WebTask["kind"], params: Record<string, unknown>, title?: string) => void;
+  onEdit: (task: WebTask) => void;
+  onMaterialize: (task: WebTask) => void;
+  onStart: (task: WebTask) => void;
+  onCancel: (task: WebTask) => void;
+  onDuplicate: (task: WebTask) => void;
+  onDelete: (task: WebTask) => void;
+}) {
+  const scopedTasks = props.tasks.filter((task) => task.kind === props.kind);
+  const runningCount = scopedTasks.filter((task) => task.status === "running").length;
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+            {props.icon}
+          </div>
+          <div className="min-w-0">
+            <h1 className="m-0 truncate text-xl font-bold text-[var(--app-text)]">{props.label}</h1>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Chip variant="soft" color="default">{scopedTasks.length} 个任务</Chip>
+          <Chip variant="soft" color={runningCount ? "accent" : "default"}>{runningCount} 运行中</Chip>
+        </div>
+      </div>
+      <TaskCreatePanel kind={props.kind} onCreate={props.onCreate} isLoading={props.isLoading} />
+      <TaskTable
+        label={props.label}
+        tasks={scopedTasks}
+        onEdit={props.onEdit}
+        onMaterialize={props.onMaterialize}
+        onStart={props.onStart}
+        onCancel={props.onCancel}
+        onDuplicate={props.onDuplicate}
+        onDelete={props.onDelete}
+      />
+    </div>
   );
 }
 
@@ -623,7 +687,7 @@ function TaskEditor(props: { task: WebTask | null; onClose: () => void; onSave: 
 
 export function App() {
   const [token] = useState(readToken);
-  const [view, setView] = useState<ViewKey>("tasks");
+  const [view, setView] = useState<ViewKey>(() => viewFromPath(window.location.pathname));
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [schema, setSchema] = useState<ConfigSchema | null>(null);
   const [configValues, setConfigValues] = useState<Record<string, unknown>>({});
@@ -631,6 +695,25 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<WebTask | null>(null);
   const mobileNav = useOverlayState({});
+
+  const navigate = (nextView: ViewKey) => {
+    if (nextView !== view) {
+      window.history.pushState({ view: nextView }, "", urlForView(nextView));
+      setView(nextView);
+    }
+  };
+
+  useEffect(() => {
+    const nextView = viewFromPath(window.location.pathname);
+    const canonicalPath = pathForView(nextView);
+    if (window.location.pathname !== canonicalPath) {
+      window.history.replaceState({ view: nextView }, "", urlForView(nextView));
+    }
+    setView(nextView);
+    const onPopState = () => setView(viewFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.colorScheme = theme;
@@ -732,7 +815,7 @@ export function App() {
             </div>
                 <div className="header-copy min-w-0">
                   <div className="truncate text-base font-bold">KToolBox WebUI</div>
-                  <div className="header-subtitle truncate text-xs text-[var(--app-muted)]">Env 配置、Post 下载与作者同步队列</div>
+                  <div className="header-subtitle truncate text-xs text-[var(--app-muted)]">Post 下载、Artist 同步与 Env 配置</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -749,23 +832,41 @@ export function App() {
 
       <div className="workspace">
         <aside className="sidebar p-4">
-          <NavContent view={view} onView={setView} />
+          <NavContent view={view} onView={navigate} />
         </aside>
         <main className="main-scroll">
           <div className="mx-auto grid max-w-[1600px] gap-4 p-4">
-            {view === "tasks" ? (
-              <>
-                <TaskCreatePanel onCreate={createTask} isLoading={loading} />
-                <TaskTable
-                  tasks={tasks}
-                  onEdit={setEditing}
-                  onMaterialize={(task) => taskAction("文件任务已生成", () => apiFetch(`/api/tasks/${task.id}/materialize`, token, { method: "POST" }))}
-                  onStart={(task) => taskAction("任务已开始", () => apiFetch(`/api/tasks/${task.id}/start`, token, { method: "POST" }))}
-                  onCancel={(task) => taskAction("任务已取消", () => apiFetch(`/api/tasks/${task.id}/cancel`, token, { method: "POST" }))}
-                  onDuplicate={(task) => taskAction("任务已复制", () => apiFetch(`/api/tasks/${task.id}/duplicate`, token, { method: "POST" }))}
-                  onDelete={(task) => taskAction("任务已删除", () => apiFetch(`/api/tasks/${task.id}`, token, { method: "DELETE" }))}
-                />
-              </>
+            {view === "post-download" ? (
+              <TaskPage
+                kind="post_download"
+                label="Post 下载"
+                icon={<FileDown size={20} />}
+                tasks={tasks}
+                isLoading={loading}
+                onCreate={createTask}
+                onEdit={setEditing}
+                onMaterialize={(task) => taskAction("文件任务已生成", () => apiFetch(`/api/tasks/${task.id}/materialize`, token, { method: "POST" }))}
+                onStart={(task) => taskAction("任务已开始", () => apiFetch(`/api/tasks/${task.id}/start`, token, { method: "POST" }))}
+                onCancel={(task) => taskAction("任务已取消", () => apiFetch(`/api/tasks/${task.id}/cancel`, token, { method: "POST" }))}
+                onDuplicate={(task) => taskAction("任务已复制", () => apiFetch(`/api/tasks/${task.id}/duplicate`, token, { method: "POST" }))}
+                onDelete={(task) => taskAction("任务已删除", () => apiFetch(`/api/tasks/${task.id}`, token, { method: "DELETE" }))}
+              />
+            ) : null}
+            {view === "artist-sync" ? (
+              <TaskPage
+                kind="creator_sync"
+                label="Artist 同步"
+                icon={<Users size={20} />}
+                tasks={tasks}
+                isLoading={loading}
+                onCreate={createTask}
+                onEdit={setEditing}
+                onMaterialize={(task) => taskAction("文件任务已生成", () => apiFetch(`/api/tasks/${task.id}/materialize`, token, { method: "POST" }))}
+                onStart={(task) => taskAction("任务已开始", () => apiFetch(`/api/tasks/${task.id}/start`, token, { method: "POST" }))}
+                onCancel={(task) => taskAction("任务已取消", () => apiFetch(`/api/tasks/${task.id}/cancel`, token, { method: "POST" }))}
+                onDuplicate={(task) => taskAction("任务已复制", () => apiFetch(`/api/tasks/${task.id}/duplicate`, token, { method: "POST" }))}
+                onDelete={(task) => taskAction("任务已删除", () => apiFetch(`/api/tasks/${task.id}`, token, { method: "DELETE" }))}
+              />
             ) : null}
             {view === "config" ? <ConfigPanel schema={schema} values={configValues} setValues={setConfigValues} onSave={saveConfig} isLoading={loading} /> : null}
             {view === "activity" ? (
@@ -802,7 +903,7 @@ export function App() {
                 <NavContent
                   view={view}
                   onView={(nextView) => {
-                    setView(nextView);
+                    navigate(nextView);
                     mobileNav.close();
                   }}
                 />

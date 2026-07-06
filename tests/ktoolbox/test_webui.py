@@ -53,6 +53,15 @@ def test_webui_api_requires_token_and_creates_task(tmp_path):
     assert client.get("/api/tasks", headers=authed).json()[0]["kind"] == "post_download"
 
 
+def test_webui_serves_spa_routes(tmp_path):
+    client = TestClient(create_app(token="secret", state_path=tmp_path / "state.json"))
+
+    response = client.get("/artist-sync?token=secret")
+
+    assert response.status_code == 200
+    assert "KToolBox WebUI" in response.text
+
+
 @pytest.mark.asyncio
 async def test_create_job_from_post_dry_run_has_no_side_effects(tmp_path):
     post = Post(
