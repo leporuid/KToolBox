@@ -19,6 +19,7 @@ classifiers = [
 ]
 
 packages = [{ include = "ktoolbox" }]
+include = ["ktoolbox/webui/static/**/*"]
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/Ljzd-PRO/KToolBox/issues"
@@ -45,6 +46,8 @@ urwid = [
     {version="^2.6.16", optional=true, markers = "sys_platform != 'win32'"},
     {version="^2.6.16", extras=["curses"], optional=true, markers = "sys_platform == 'win32'"}
 ]
+fastapi = ">=0.115,<0.116"
+uvicorn = ">=0.30,<0.31"
 
 [tool.poetry.group.pyinstaller.dependencies]
 pyinstaller = "==6.15.0"

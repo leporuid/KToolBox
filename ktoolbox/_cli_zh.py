@@ -29,6 +29,18 @@ class KToolBoxCli(ktoolbox.cli.KToolBoxCli):
         return await super().config_editor()
 
     @staticmethod
+    def webui(host: str = "0.0.0.0", port: int = 8789, token: str = None, no_auth: bool = False):
+        """
+        启动 KToolBox WebUI 面板。
+
+        :param host: 监听地址，默认 ``0.0.0.0`` 以允许局域网访问
+        :param port: 监听端口
+        :param token: 访问令牌，留空时自动生成
+        :param no_auth: 禁用令牌认证
+        """
+        return super().webui(host=host, port=port, token=token, no_auth=no_auth)
+
+    @staticmethod
     async def example_env():
         """
         生成示例配置 ``.env`` 文件

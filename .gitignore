@@ -9,6 +9,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+node_modules/
+*.tsbuildinfo
 develop-eggs/
 dist/
 downloads/
@@ -121,6 +123,7 @@ celerybeat.pid
 
 # Environments
 # .env
+.ktoolbox/
 .venv
 env/
 venv/

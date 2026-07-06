@@ -64,6 +64,19 @@ class KToolBoxCli:
             )
 
     @staticmethod
+    def webui(host: str = "0.0.0.0", port: int = 8789, token: str = None, no_auth: bool = False):
+        """
+        Launch the local KToolBox WebUI panel.
+
+        :param host: Host to bind, defaults to ``0.0.0.0`` for LAN access
+        :param port: Port to bind
+        :param token: Access token; generated automatically when omitted
+        :param no_auth: Disable token authentication
+        """
+        from ktoolbox.webui import run_webui
+        run_webui(host=host, port=port, token=token, no_auth=no_auth)
+
+    @staticmethod
     async def example_env():
         """Generate an example configuration ``.env`` file."""
         print(
