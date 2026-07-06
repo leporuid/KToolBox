@@ -42,9 +42,9 @@ type ViewKey = "post-download" | "artist-sync" | "config" | "activity";
 type ThemeMode = "light" | "dark";
 
 const navItems: Array<{ key: ViewKey; path: string; label: string; icon: ReactNode }> = [
-  { key: "post-download", path: "/post-download", label: "Post 下载", icon: <FileDown size={18} /> },
-  { key: "artist-sync", path: "/artist-sync", label: "Artist 同步", icon: <Users size={18} /> },
-  { key: "config", path: "/config", label: "Env 配置", icon: <Settings size={18} /> },
+  { key: "post-download", path: "/post-download", label: "帖子下载", icon: <FileDown size={18} /> },
+  { key: "artist-sync", path: "/artist-sync", label: "作者同步", icon: <Users size={18} /> },
+  { key: "config", path: "/config", label: "环境配置", icon: <Settings size={18} /> },
   { key: "activity", path: "/activity", label: "运行日志", icon: <Activity size={18} /> }
 ];
 
@@ -93,8 +93,130 @@ const defaultCreatorForm = {
   mix_posts: false
 };
 
+const taskParamLabels: Record<string, string> = {
+  url: "页面链接",
+  service: "服务平台",
+  creator_id: "创作者编号",
+  post_id: "帖子编号",
+  revision_id: "修订编号",
+  path: "保存路径",
+  offset: "起始偏移",
+  length: "同步数量",
+  start_time: "开始日期",
+  end_time: "结束日期",
+  keywords: "包含关键词",
+  keywords_exclude: "排除关键词"
+};
+
+const configGroupLabels: Record<string, string> = {
+  api: "接口",
+  downloader: "下载器",
+  job: "任务",
+  logger: "日志",
+  general: "通用"
+};
+
+const configNameLabels: Record<string, string> = {
+  scheme: "协议",
+  netloc: "主机地址",
+  statics_netloc: "静态文件主机",
+  files_netloc: "帖子文件主机",
+  path: "路径",
+  timeout: "超时时间",
+  retry_times: "重试次数",
+  retry_interval: "重试间隔",
+  session_key: "会话密钥",
+  encoding: "字符集",
+  buffer_size: "缓冲区大小",
+  chunk_size: "分块大小",
+  temp_suffix: "临时后缀",
+  retry_stop_never: "永不停止重试",
+  tps_limit: "每秒连接数",
+  use_bucket: "启用存储桶",
+  bucket_path: "存储桶路径",
+  reverse_proxy: "反向代理",
+  keep_metadata: "保留文件元数据",
+  count: "并发数量",
+  include_revisions: "包含修订",
+  post_dirname_format: "帖子目录格式",
+  attachments: "附件目录",
+  content: "内容文件",
+  external_links: "外部链接文件",
+  file: "帖子文件名格式",
+  revisions: "修订目录",
+  mix_posts: "合并帖子",
+  sequential_filename: "附件顺序命名",
+  sequential_filename_excludes: "顺序命名排除项",
+  filename_format: "文件名格式",
+  allow_list: "允许列表",
+  block_list: "排除列表",
+  extract_content: "提取帖子内容",
+  extract_content_images: "提取内容图片",
+  extract_external_links: "提取外部链接",
+  external_link_patterns: "外部链接匹配规则",
+  group_by_year: "按年分组",
+  group_by_month: "按月分组",
+  year_dirname_format: "年份目录格式",
+  month_dirname_format: "月份目录格式",
+  keywords: "包含关键词",
+  keywords_exclude: "排除关键词",
+  download_file: "下载帖子文件",
+  download_attachments: "下载附件",
+  min_file_size: "最小文件大小",
+  max_file_size: "最大文件大小",
+  level: "日志级别",
+  rotation: "日志轮换",
+  ssl_verify: "SSL 证书验证",
+  json_dump_indent: "JSON 缩进",
+  use_uvloop: "启用事件循环优化"
+};
+
+const configTypeLabels: Record<string, string> = {
+  choice: "选项",
+  str: "文本",
+  int: "整数",
+  float: "小数",
+  bool: "开关",
+  Path: "路径",
+  array: "列表",
+  "optional[int]": "可选整数",
+  "optional[float]": "可选小数",
+  "optional[Path]": "可选路径",
+  "Union[str, int]": "文本或整数",
+  "Union[str, int, datetime.time, datetime.timedelta]": "轮换周期"
+};
+
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+function humanizeIdentifier(value: string) {
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function taskParamLabel(kind: WebTask["kind"], key: string) {
+  if (kind === "creator_sync" && key === "creator_id") return "作者编号";
+  if (kind === "post_download" && key === "url") return "帖子页面链接";
+  if (kind === "creator_sync" && key === "url") return "作者页面链接";
+  return taskParamLabels[key] || humanizeIdentifier(key);
+}
+
+function configGroupLabel(group: string) {
+  return configGroupLabels[group] || humanizeIdentifier(group);
+}
+
+function configFieldLabel(field: ConfigField) {
+  const name = configNameLabels[field.name] || humanizeIdentifier(field.name);
+  const group = configGroupLabel(field.group);
+  return group === "通用" ? name : `${group} · ${name}`;
+}
+
+function configTypeLabel(type: string) {
+  return configTypeLabels[type] || humanizeIdentifier(type);
 }
 
 function Field(props: { label: string; hint?: string; children: ReactNode }) {
@@ -164,7 +286,7 @@ function StatusChip({ status }: { status: WebTask["status"] }) {
 function KindChip({ kind }: { kind: WebTask["kind"] }) {
   return (
     <Chip size="sm" variant="soft" color={kind === "post_download" ? "accent" : "success"}>
-      {kind === "post_download" ? "Post 下载" : "Artist 同步"}
+      {kind === "post_download" ? "帖子下载" : "作者同步"}
     </Chip>
   );
 }
@@ -260,7 +382,7 @@ function ConfigPanel(props: {
     return (props.schema?.fields || []).filter((field) => {
       if (group !== "all" && field.group !== group) return false;
       if (!q) return true;
-      return `${field.path} ${field.env} ${field.description}`.toLowerCase().includes(q);
+      return `${configFieldLabel(field)} ${configGroupLabel(field.group)} ${field.path} ${field.env} ${field.description}`.toLowerCase().includes(q);
     });
   }, [props.schema, group, query]);
   const dirtyCount = useMemo(() => {
@@ -272,7 +394,7 @@ function ConfigPanel(props: {
     <div className="grid gap-4">
       <Surface variant="secondary" className="toolbar-surface grid gap-3 p-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <Field label="搜索配置" hint={props.schema ? `写入目标：${props.schema.envPath}` : undefined}>
-          <Input className="textfield" variant="secondary" value={query} placeholder="字段、env 名或说明" onChange={(event) => setQuery(event.target.value)} />
+          <Input className="textfield" variant="secondary" value={query} placeholder="配置名称、环境变量或说明" onChange={(event) => setQuery(event.target.value)} />
         </Field>
         <div className="flex flex-wrap items-center gap-2">
           <Chip variant={group === "all" ? "primary" : "soft"} color="accent" className="cursor-pointer" onClick={() => setGroup("all")}>
@@ -280,7 +402,7 @@ function ConfigPanel(props: {
           </Chip>
           {groups.map((name) => (
             <Chip key={name} variant={group === name ? "primary" : "soft"} className="cursor-pointer" onClick={() => setGroup(name)}>
-              {name}
+              {configGroupLabel(name)}
             </Chip>
           ))}
           <Button variant="primary" isPending={props.isLoading} isDisabled={!dirtyCount || props.isLoading} onPress={props.onSave}>
@@ -295,10 +417,10 @@ function ConfigPanel(props: {
           <div className="config-item" key={field.path}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="break-words text-sm font-semibold text-[var(--app-text)]">{field.path}</div>
-                <div className="field-description break-all">{field.env}</div>
+                <div className="break-words text-sm font-semibold text-[var(--app-text)]">{configFieldLabel(field)}</div>
+                <div className="field-description break-all">技术键：{field.path} · 环境变量：{field.env}</div>
               </div>
-              <Chip size="sm" variant="soft">{field.type}</Chip>
+              <Chip size="sm" variant="soft">{configTypeLabel(field.type)}</Chip>
             </div>
             {renderConfigControl(field, props.values[field.path], (value) => props.setValues({ ...props.values, [field.path]: value }))}
             {field.description ? <p className="field-description m-0">{field.description}</p> : null}
@@ -323,7 +445,7 @@ function renderConfigControl(field: ConfigField, value: unknown, onChange: (valu
     );
   }
   if (field.choices?.length) {
-    return <AppSelect value={String(value || "")} ariaLabel={field.path} options={field.choices.map((choice) => ({ value: String(choice), label: String(choice) }))} onChange={onChange} />;
+    return <AppSelect value={String(value || "")} ariaLabel={configFieldLabel(field)} options={field.choices.map((choice) => ({ value: String(choice), label: String(choice) }))} onChange={onChange} />;
   }
   if (field.type === "array") {
     return (
@@ -370,22 +492,22 @@ function TaskCreatePanel(props: { kind: WebTask["kind"]; onCreate: (kind: WebTas
           <Input className="textfield" variant="secondary" value={String(form.title)} placeholder="可选，留空自动生成" onChange={(event) => setField("title", event.target.value)} />
         </Field>
         <Chip color={isPost ? "accent" : "success"} variant="soft">
-          {isPost ? "Post 下载" : "Artist 同步"}
+          {isPost ? "帖子下载" : "作者同步"}
         </Chip>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Field label="URL">
-          <Input className="textfield" variant="secondary" value={String(form.url)} placeholder="Kemono / Coomer 页面 URL" onChange={(event) => setField("url", event.target.value)} />
+        <Field label={isPost ? "帖子页面链接" : "作者页面链接"}>
+          <Input className="textfield" variant="secondary" value={String(form.url)} placeholder="粘贴 Kemono / Coomer 页面链接" onChange={(event) => setField("url", event.target.value)} />
         </Field>
-        <Field label="Service">
+        <Field label="服务平台">
           <Input className="textfield" variant="secondary" value={String(form.service)} placeholder="fanbox / patreon" onChange={(event) => setField("service", event.target.value)} />
         </Field>
-        <Field label={isPost ? "Creator ID" : "Artist ID"}>
+        <Field label={isPost ? "创作者编号" : "作者编号"}>
           <Input className="textfield" variant="secondary" value={String(form.creator_id)} onChange={(event) => setField("creator_id", event.target.value)} />
         </Field>
         {isPost ? (
-          <Field label="Post ID">
+          <Field label="帖子编号">
             <Input className="textfield" variant="secondary" value={String(postForm.post_id)} onChange={(event) => setField("post_id", event.target.value)} />
           </Field>
         ) : (
@@ -397,12 +519,12 @@ function TaskCreatePanel(props: { kind: WebTask["kind"]; onCreate: (kind: WebTas
           <Input className="textfield" variant="secondary" value={String(form.path)} onChange={(event) => setField("path", event.target.value)} />
         </Field>
         {isPost ? (
-          <Field label="Revision ID">
+          <Field label="修订编号">
             <Input className="textfield" variant="secondary" value={String(postForm.revision_id)} onChange={(event) => setField("revision_id", event.target.value)} />
           </Field>
         ) : (
           <>
-            <Field label="Offset">
+            <Field label="起始偏移">
               <Input className="textfield" variant="secondary" type="number" value={String(creatorForm.offset)} onChange={(event) => setField("offset", event.target.value)} />
             </Field>
             <Field label="开始日期">
@@ -426,8 +548,12 @@ function TaskCreatePanel(props: { kind: WebTask["kind"]; onCreate: (kind: WebTas
             </Switch.Root>
           ) : (
             <>
-              <Input className="w-56" variant="secondary" value={String(creatorForm.keywords)} placeholder="包含关键词，逗号分隔" onChange={(event) => setField("keywords", event.target.value)} />
-              <Input className="w-56" variant="secondary" value={String(creatorForm.keywords_exclude)} placeholder="排除关键词，逗号分隔" onChange={(event) => setField("keywords_exclude", event.target.value)} />
+              <Field label="包含关键词">
+                <Input className="w-56" variant="secondary" value={String(creatorForm.keywords)} placeholder="逗号分隔" onChange={(event) => setField("keywords", event.target.value)} />
+              </Field>
+              <Field label="排除关键词">
+                <Input className="w-56" variant="secondary" value={String(creatorForm.keywords_exclude)} placeholder="逗号分隔" onChange={(event) => setField("keywords_exclude", event.target.value)} />
+              </Field>
               <Switch.Root isSelected={Boolean(creatorForm.save_creator_indices)} onChange={(value) => setField("save_creator_indices", value)}>
                 <Switch.Content className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold">
                   <Users size={16} />
@@ -445,7 +571,7 @@ function TaskCreatePanel(props: { kind: WebTask["kind"]; onCreate: (kind: WebTas
         </div>
         <Button variant="primary" isPending={props.isLoading} onPress={submit}>
           <Plus size={16} />
-          {isPost ? "创建 Post 下载" : "创建 Artist 同步"}
+          {isPost ? "创建帖子下载" : "创建作者同步"}
         </Button>
       </div>
     </Surface>
@@ -638,7 +764,7 @@ function TaskEditor(props: { task: WebTask | null; onClose: () => void; onSave: 
         </Field>
         <div className="grid gap-3 md:grid-cols-2">
           {params.map((key) => (
-            <Field label={key} key={key}>
+            <Field label={taskParamLabel(draft.kind, key)} key={key}>
               <Input className="textfield" variant="secondary" value={String(draft.params[key] ?? "")} onChange={(event) => setParam(key, event.target.value)} />
             </Field>
           ))}
@@ -673,9 +799,15 @@ function TaskEditor(props: { task: WebTask | null; onClose: () => void; onSave: 
                 </Button>
               </div>
               <div className="grid gap-2 md:grid-cols-3">
-                <Input variant="secondary" value={job.path} aria-label="保存路径" onChange={(event) => setJob(index, { ...job, path: event.target.value })} />
-                <Input variant="secondary" value={job.server_path} aria-label="服务端路径" onChange={(event) => setJob(index, { ...job, server_path: event.target.value })} />
-                <Input variant="secondary" value={job.alt_filename || ""} aria-label="替代文件名" onChange={(event) => setJob(index, { ...job, alt_filename: event.target.value })} />
+                <Field label="本地保存路径">
+                  <Input variant="secondary" value={job.path} aria-label="本地保存路径" onChange={(event) => setJob(index, { ...job, path: event.target.value })} />
+                </Field>
+                <Field label="服务器文件路径">
+                  <Input variant="secondary" value={job.server_path} aria-label="服务器文件路径" onChange={(event) => setJob(index, { ...job, server_path: event.target.value })} />
+                </Field>
+                <Field label="替代文件名">
+                  <Input variant="secondary" value={job.alt_filename || ""} aria-label="替代文件名" onChange={(event) => setJob(index, { ...job, alt_filename: event.target.value })} />
+                </Field>
               </div>
             </div>
           ))}
@@ -806,24 +938,24 @@ export function App() {
     <div className="app-shell">
       <header className="app-header px-4 py-3">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Button className="md:hidden" isIconOnly aria-label="打开菜单" variant="outline" onPress={mobileNav.open}>
               <Menu size={18} />
             </Button>
             <div className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
               <Download size={21} />
             </div>
-                <div className="header-copy min-w-0">
-                  <div className="truncate text-base font-bold">KToolBox WebUI</div>
-                  <div className="header-subtitle truncate text-xs text-[var(--app-muted)]">Post 下载、Artist 同步与 Env 配置</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="header-status-chip">
-                  <Chip variant="soft" color={tasks.some((task) => task.status === "running") ? "accent" : "default"}>
-                    {tasks.filter((task) => task.status === "running").length} 运行中
-                  </Chip>
-                </span>
+            <div className="header-copy min-w-0">
+              <div className="truncate text-base font-bold">KToolBox WebUI</div>
+              <div className="header-subtitle truncate text-xs text-[var(--app-muted)]">帖子下载、作者同步与环境配置</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="header-status-chip">
+              <Chip variant="soft" color={tasks.some((task) => task.status === "running") ? "accent" : "default"}>
+                {tasks.filter((task) => task.status === "running").length} 运行中
+              </Chip>
+            </span>
             <IconButton label="刷新" icon={loading ? <Spinner size="sm" /> : <RefreshCw size={16} />} onPress={() => load("manual")} />
             <IconButton label="切换主题" icon={theme === "dark" ? <Sun size={16} /> : <Moon size={16} />} onPress={() => setTheme(theme === "dark" ? "light" : "dark")} />
           </div>
@@ -839,7 +971,7 @@ export function App() {
             {view === "post-download" ? (
               <TaskPage
                 kind="post_download"
-                label="Post 下载"
+                label="帖子下载"
                 icon={<FileDown size={20} />}
                 tasks={tasks}
                 isLoading={loading}
@@ -855,7 +987,7 @@ export function App() {
             {view === "artist-sync" ? (
               <TaskPage
                 kind="creator_sync"
-                label="Artist 同步"
+                label="作者同步"
                 icon={<Users size={20} />}
                 tasks={tasks}
                 isLoading={loading}
