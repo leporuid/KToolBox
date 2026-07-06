@@ -26,6 +26,16 @@ ktoolbox download-post -h
 ktoolbox config-editor
 ```
 
+## Launch the WebUI panel
+
+`webui`
+
+```bash
+ktoolbox webui
+```
+
+By default it binds to `0.0.0.0:8789` and prints a tokenized access URL.
+
 ## Generate an example configuration file (`.env`/`prod.env`)
 
 `example-env`

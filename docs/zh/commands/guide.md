@@ -26,6 +26,16 @@ ktoolbox download-post -h
 ktoolbox config-editor
 ```
 
+## 启动 WebUI 面板
+
+`webui`
+
+```bash
+ktoolbox webui
+```
+
+默认监听 `0.0.0.0:8789`，启动时会输出带访问 token 的 URL。
+
 ## 生成一个配置文件样例 (`.env`/`prod.env`)
 
 `example-env`
