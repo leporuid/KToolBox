@@ -81,9 +81,11 @@
 === "一般情况"
    推荐使用 pipx
    ```bash
-   uv tool install "ktoolbox[urwid,winloop]"
+   pip3 install pipx
+   # Windows
+   pipx install ktoolbox[urwid,winloop]
    # Linux / macOS
-   uv tool install "ktoolbox[urwid,uvloop]"
+   pipx install ktoolbox[urwid,uvloop]
    ```
 
 === "纯 Python"
@@ -95,7 +97,7 @@
 
 === "对于 iOS a-Shell"
     ```bash
-    uv tool install ktoolbox-pure-py
+    pip3 install ktoolbox-pure-py
     ```
     !!! info "关于 a-Shell"
         [a-Shell](https://github.com/holzschu/a-shell) 是一个 iOS 终端 App，它只能运行纯 Python 脚本

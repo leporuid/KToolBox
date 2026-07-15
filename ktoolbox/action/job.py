@@ -27,7 +27,8 @@ async def create_job_from_post(
         post_path: Path,
         *,
         post_dir: bool = True,
-        dump_post_data: bool = True
+        dump_post_data: bool = True,
+        materialize: bool = True
 ) -> List[Job]:
     """
     Create a list of download job from a post data
@@ -36,24 +37,27 @@ async def create_job_from_post(
     :param post_path: Path of the post directory, which needs to be sanitized
     :param post_dir: Whether to create post directory
     :param dump_post_data: Whether to dump post data (post.json) in post directory
+    :param materialize: Whether to create directories and side-effect files while building jobs
     :raise FetchInterruptError: If fetching post content fails
     """
-    post_path.mkdir(parents=True, exist_ok=True)
+    if materialize:
+        post_path.mkdir(parents=True, exist_ok=True)
 
     # Load ``PostStructureConfiguration``
     if post_dir:
         attachments_path = post_path / config.job.post_structure.attachments  # attachments
-        attachments_path.mkdir(exist_ok=True)
         content_path = post_path / config.job.post_structure.content  # content
-        content_path.parent.mkdir(exist_ok=True)
         external_links_path = post_path / config.job.post_structure.external_links  # external_links
-        external_links_path.parent.mkdir(exist_ok=True)
+        if materialize:
+            attachments_path.mkdir(exist_ok=True)
+            content_path.parent.mkdir(exist_ok=True)
+            external_links_path.parent.mkdir(exist_ok=True)
     else:
         attachments_path = post_path
         content_path = None
         external_links_path = None
 
-    if dump_post_data:
+    if materialize and dump_post_data:
         async with aiofiles.open(str(post_path / DataStorageNameEnum.PostData.value), "w", encoding="utf-8") as f:
             await f.write(
                 post.model_dump_json(indent=config.json_dump_indent)
@@ -63,7 +67,7 @@ async def create_job_from_post(
     jobs: List[Job] = []
     sequential_counter = 1  # Counter for sequential filenames
     if config.job.download_attachments:
-        for i, attachment in enumerate(post.attachments):  # type: int, Attachment
+        for i, attachment in enumerate(post.attachments or []):  # type: int, Attachment
             if not attachment.path:
                 continue
             file_path_obj = Path(attachment.name) if is_valid_filename(attachment.name) else Path(
@@ -154,12 +158,12 @@ async def create_job_from_post(
         # If post content is still empty, skip content extraction
         if post.content:
             # Write content file
-            if config.job.extract_content:
+            if materialize and config.job.extract_content:
                 async with aiofiles.open(content_path, "w", encoding=config.downloader.encoding) as f:
                     await f.write(post.content)
 
             # Extract and write external links file
-            if config.job.extract_external_links:
+            if materialize and config.job.extract_external_links:
                 external_links = extract_external_links(post.content, config.job.external_link_patterns)
                 if external_links:
                     async with aiofiles.open(external_links_path, "w", encoding=config.downloader.encoding) as f:
@@ -244,7 +248,8 @@ async def create_job_from_creator(
         start_time: Optional[datetime],
         end_time: Optional[datetime],
         keywords: Optional[Set[str]] = None,
-        keywords_exclude: Optional[Set[str]] = None
+        keywords_exclude: Optional[Set[str]] = None,
+        materialize: bool = True
 ) -> ActionRet[List[Job]]:
     """
     Create a list of download job from a creator
@@ -262,6 +267,7 @@ async def create_job_from_creator(
     :param end_time: End time of the time range
     :param keywords: Set of keywords to filter posts by title (case-insensitive)
     :param keywords_exclude: Set of keywords to exclude posts by title (case-insensitive)
+    :param materialize: Whether to create directories and side-effect files while building jobs
     """
     mix_posts = config.job.mix_posts if mix_posts is None else mix_posts
 
@@ -304,7 +310,7 @@ async def create_job_from_creator(
     logger.info(f"Get {len(post_list)} posts after filtering, start creating jobs")
 
     # Filter posts and generate ``CreatorIndices``
-    if not mix_posts:
+    if materialize and not mix_posts:
         if save_creator_indices:
             # Generate posts_path with year/month grouping if enabled
             posts_path = {}
@@ -349,7 +355,8 @@ async def create_job_from_creator(
                 post=post,
                 post_path=post_path,
                 post_dir=not mix_posts,
-                dump_post_data=not mix_posts
+                dump_post_data=not mix_posts,
+                materialize=materialize
             )
         except FetchInterruptError as e:
             return ActionRet(**e.ret.model_dump(mode="python"))
@@ -371,7 +378,8 @@ async def create_job_from_creator(
                                 revision_jobs = await create_job_from_post(
                                     post=revision,
                                     post_path=revision_path,
-                                    dump_post_data=True
+                                    dump_post_data=True,
+                                    materialize=materialize
                                 )
                             except FetchInterruptError as e:
                                 return ActionRet(**e.ret.model_dump(mode="python"))

@@ -18,14 +18,3 @@
 KToolBox 使用 BSD 3-Clause 许可证.
 
 Copyright © 2023 by Ljzd-PRO.
-
-
-## 安装
-
-```bash
-uv tool install ktoolbox
-```
-
-```bash
-uv tool install "ktoolbox[urwid,uvloop]"
-```
