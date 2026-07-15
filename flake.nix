@@ -51,7 +51,7 @@
         );
 
         # If you want a virtualenv package:
-        runtimeEnv = pythonSet.mkVirtualEnv "ktoolbox-env" workspace.deps.default;
+        runtimeEnv = pythonSet.mkVirtualEnv "ktoolbox" workspace.deps.default;
       in
       {
         packages.default = runtimeEnv;
