@@ -3,9 +3,23 @@ name = "ktoolbox"
 version = "v1.0.0"
 description = "An asynchronous CLI and typed Python client for downloading public Pawchive posts"
 authors = [{ name = "Ljzd-PRO", email = "me@ljzd.link" }]
+requires-python = ">=3.10,<=3.14"
 readme = "README.md"
 license = "BSD-3-Clause"
-requires-python = ">=3.10,<=3.14"
+keywords = [
+    "pawchive",
+    "cli-app",
+    "downloader",
+    "asyncio",
+    "pydantic",
+    "os-independent",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Terminals",
+]
 dependencies = [
     "pydantic>=2.4.2,<3.0.0",
     "pydantic-settings>=2.0.3,<3.0.0",
@@ -22,23 +36,6 @@ dependencies = [
     "croniter>=6.0,<7.0",
     "tzdata>=2025.2",
 ]
-
-keywords = ["pawchive", "cli-app", "downloader", "asyncio", "pydantic", "os-independent"]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-    "Development Status :: 5 - Production/Stable",
-    "Topic :: Terminals",
-]
-
-[project.urls]
-Homepage = "https://ktoolbox.readthedocs.io/"
-Repository = "https://github.com/Ljzd-PRO/KToolBox"
-Documentation = "https://ktoolbox.readthedocs.io/"
-"Bug Tracker" = "https://github.com/Ljzd-PRO/KToolBox/issues"
-
-[project.scripts]
-ktoolbox = "ktoolbox.__main__:main"
 
 [project.optional-dependencies]
 uvloop = ["uvloop>=0.19,<0.22; sys_platform != 'win32'"]
@@ -59,48 +56,53 @@ webui = [
     "pyyaml (>=6,<7)",
 ]
 
-[tool.poetry]
-packages = [{ include = "ktoolbox" }]
-include = [{ path = "webui/openapi.yaml", format = ["sdist", "wheel"] }]
+[project.urls]
+Homepage = "https://ktoolbox.readthedocs.io/"
+Repository = "https://github.com/Ljzd-PRO/KToolBox"
+Documentation = "https://ktoolbox.readthedocs.io/"
+"Bug Tracker" = "https://github.com/Ljzd-PRO/KToolBox/issues"
 
-[tool.poetry.group.pyinstaller.dependencies]
-pyinstaller = "==6.15.0"
+[project.scripts]
+ktoolbox = "ktoolbox.__main__:main"
 
-[tool.poetry.group.docs.dependencies]
-mkdocs = "^1.5.3"
-mkdocs-static-i18n = "^1.2.0"
-mkdocs-material = "^9.4.14"
-mike = "^2.0.0"
+[dependency-groups]
+pyinstaller = ["pyinstaller==6.15.0"]
+docs = [
+    "mkdocs>=1.5.3,<2",
+    "mkdocs-static-i18n>=1.2.0,<2",
+    "mkdocs-material>=9.4.14,<10",
+    "mike>=2.0.0,<3",
+]
+test = [
+    "pytest>=8.4,<9.0",
+    "pytest-asyncio>=1.2,<2.0",
+    "pytest-cov>=7.0,<8.0",
+    "pytest-socket>=0.7,<0.8",
+    "respx>=0.23,<0.24",
+]
+dev = [
+    "datamodel-code-generator>=0.57,<0.58",
+    "openapi-spec-validator>=0.9,<0.10",
+    "ruff>=0.15,<0.16",
+    "mypy>=2.3,<2.4",
+    "types-croniter>=6.0,<7.0",
+]
 
-[tool.poetry.group.test.dependencies]
-pytest = ">=8.4,<9.0"
-pytest-asyncio = ">=1.2,<2.0"
-pytest-cov = ">=7.0,<8.0"
-pytest-socket = ">=0.7,<0.8"
-respx = ">=0.23,<0.24"
+[tool.hatch.build.targets.sdist]
+include = ["ktoolbox"]
 
-[tool.poetry.group.dev.dependencies]
-datamodel-code-generator = ">=0.57,<0.58"
-openapi-spec-validator = ">=0.9,<0.10"
-ruff = ">=0.15,<0.16"
-mypy = ">=2.3,<2.4"
-types-croniter = ">=6.0,<7.0"
+[tool.hatch.build.targets.sdist.force-include]
+"webui/openapi.yaml" = "webui/openapi.yaml"
 
-[tool.poetry.group.pyinstaller]
-optional = true
+[tool.hatch.build.targets.wheel]
+include = ["ktoolbox"]
 
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.test]
-optional = true
-
-[tool.poetry.group.dev]
-optional = true
+[tool.hatch.build.targets.wheel.force-include]
+"webui/openapi.yaml" = "webui/openapi.yaml"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers -W error --disable-socket --allow-unix-socket"
