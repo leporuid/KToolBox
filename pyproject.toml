@@ -3,23 +3,9 @@ name = "ktoolbox"
 version = "v1.0.0"
 description = "An asynchronous CLI and typed Python client for downloading public Pawchive posts"
 authors = [{ name = "Ljzd-PRO", email = "me@ljzd.link" }]
-requires-python = ">=3.10,<=3.14"
 readme = "README.md"
 license = "BSD-3-Clause"
-keywords = [
-    "pawchive",
-    "cli-app",
-    "downloader",
-    "asyncio",
-    "pydantic",
-    "os-independent",
-]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-    "Development Status :: 5 - Production/Stable",
-    "Topic :: Terminals",
-]
+requires-python = ">=3.10,<=3.14"
 dependencies = [
     "pydantic>=2.4.2,<3.0.0",
     "pydantic-settings>=2.0.3,<3.0.0",
@@ -37,6 +23,23 @@ dependencies = [
     "tzdata>=2025.2",
 ]
 
+keywords = ["pawchive", "cli-app", "downloader", "asyncio", "pydantic", "os-independent"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Terminals",
+]
+
+[project.urls]
+Homepage = "https://ktoolbox.readthedocs.io/"
+Repository = "https://github.com/Ljzd-PRO/KToolBox"
+Documentation = "https://ktoolbox.readthedocs.io/"
+"Bug Tracker" = "https://github.com/Ljzd-PRO/KToolBox/issues"
+
+[project.scripts]
+ktoolbox = "ktoolbox.__main__:main"
+
 [project.optional-dependencies]
 uvloop = ["uvloop>=0.19,<0.22; sys_platform != 'win32'"]
 winloop = ["winloop>=0.1.6; sys_platform == 'win32'"]
@@ -52,58 +55,46 @@ webui = [
     "fastapi>=0.115,<1.0",
     "filelock>=3.18,<4.0",
     "uvicorn>=0.34,<1.0",
-    "fastmcp (>=3.4,<4)",
-    "pyyaml (>=6,<7)",
+    "fastmcp>=3.4,<4",
+    "pyyaml>=6,<7",
 ]
 
-[project.urls]
-Homepage = "https://ktoolbox.readthedocs.io/"
-Repository = "https://github.com/Ljzd-PRO/KToolBox"
-Documentation = "https://ktoolbox.readthedocs.io/"
-"Bug Tracker" = "https://github.com/Ljzd-PRO/KToolBox/issues"
+# --- Build System ---
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[project.scripts]
-ktoolbox = "ktoolbox.__main__:main"
+[tool.hatch.build]
+include = [
+    "ktoolbox",
+    "webui/openapi.yaml"
+]
 
+# --- UV Dependency Groups ---
 [dependency-groups]
 pyinstaller = ["pyinstaller==6.15.0"]
 docs = [
-    "mkdocs>=1.5.3,<2",
-    "mkdocs-static-i18n>=1.2.0,<2",
-    "mkdocs-material>=9.4.14,<10",
-    "mike>=2.0.0,<3",
+    "mkdocs>=1.5.3",
+    "mkdocs-static-i18n>=1.2.0",
+    "mkdocs-material>=9.4.14",
+    "mike>=2.0.0"
 ]
 test = [
     "pytest>=8.4,<9.0",
     "pytest-asyncio>=1.2,<2.0",
     "pytest-cov>=7.0,<8.0",
     "pytest-socket>=0.7,<0.8",
-    "respx>=0.23,<0.24",
+    "respx>=0.23,<0.24"
 ]
 dev = [
     "datamodel-code-generator>=0.57,<0.58",
     "openapi-spec-validator>=0.9,<0.10",
     "ruff>=0.15,<0.16",
     "mypy>=2.3,<2.4",
-    "types-croniter>=6.0,<7.0",
+    "types-croniter>=6.0,<7.0"
 ]
 
-[tool.hatch.build.targets.sdist]
-include = ["ktoolbox"]
-
-[tool.hatch.build.targets.sdist.force-include]
-"webui/openapi.yaml" = "webui/openapi.yaml"
-
-[tool.hatch.build.targets.wheel]
-include = ["ktoolbox"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"webui/openapi.yaml" = "webui/openapi.yaml"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
+# --- Tool Configs ---
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers -W error --disable-socket --allow-unix-socket"
 asyncio_mode = "auto"
