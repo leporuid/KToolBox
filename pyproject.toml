@@ -51,7 +51,7 @@ urwid = [
 webui = [
     "aiosqlite>=0.20,<1.0",
     "argon2-cffi>=23.1,<26.0",
-    "cryptography>=45.0.1,<49.0",
+    "cryptography>=50.0.0,<51.0",
     "docstring-parser>=0.16,<1.0",
     "docutils>=0.21,<0.23",
     "fastapi>=0.115,<1.0",
@@ -59,7 +59,7 @@ webui = [
     "uvicorn>=0.34,<1.0",
     "fastmcp (>=3.4,<4)",
     "pyyaml (>=6,<7)",
-    "pillow (>=10.2,<12)",
+    "pillow>=12.3.0,<13.0",
 ]
 
 [build-system]
@@ -95,7 +95,7 @@ test = [
     "respx>=0.23,<0.24",
 ]
 dev = [
-    "datamodel-code-generator>=0.57,<0.58",
+    "datamodel-code-generator>=0.64,<0.65",
     "openapi-spec-validator>=0.9,<0.10",
     "ruff>=0.15,<0.16",
     "mypy>=2.3,<2.4",
