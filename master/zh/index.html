@@ -14,13 +14,23 @@
       
       
       
-        <link rel="next" href="about-kemono/">
+        <link rel="next" href="webui/">
       
       
         
           <link rel="alternate" href="/master/" hreflang="en">
         
           <link rel="alternate" href="/master/zh/" hreflang="zh">
+        
+          <link rel="alternate" href="/master/zh-Hant/" hreflang="zh-Hant">
+        
+          <link rel="alternate" href="/master/ru/" hreflang="ru">
+        
+          <link rel="alternate" href="/master/ja/" hreflang="ja">
+        
+          <link rel="alternate" href="/master/ko/" hreflang="ko">
+        
+          <link rel="alternate" href="/master/fr/" hreflang="fr">
         
       
       
@@ -55,9 +65,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
-    
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -94,7 +102,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#_1" class="md-skip">
+        <a href="#ktoolbox" class="md-skip">
           跳转至
         </a>
       
@@ -102,10 +110,6 @@
     <div data-md-component="announce">
       
     </div>
-    
-      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
-        
-      </div>
     
     
       
@@ -145,9 +149,9 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至深色模式"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至浅色模式"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="切换至深色模式" for="__palette_1" hidden>
+      <label class="md-header__button md-icon" title="切换至浅色模式" for="__palette_1" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
       </label>
     
@@ -155,9 +159,9 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至自动"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至深色模式"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="切换至自动" for="__palette_2" hidden>
+      <label class="md-header__button md-icon" title="切换至深色模式" for="__palette_2" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
@@ -165,9 +169,9 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至浅色模式"  type="radio" name="__palette" id="__palette_2">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至跟随系统"  type="radio" name="__palette" id="__palette_2">
     
-      <label class="md-header__button md-icon" title="切换至浅色模式" for="__palette_0" hidden>
+      <label class="md-header__button md-icon" title="切换至跟随系统" for="__palette_0" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
@@ -196,7 +200,37 @@
         
           <li class="md-select__item">
             <a href="/master/zh/" hreflang="zh" class="md-select__link">
-              中文（简体）
+              简体中文
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="/master/zh-Hant/" hreflang="zh-Hant" class="md-select__link">
+              繁體中文
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="/master/ru/" hreflang="ru" class="md-select__link">
+              Русский
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="/master/ja/" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="/master/ko/" hreflang="ko" class="md-select__link">
+              한국어
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="/master/fr/" hreflang="fr" class="md-select__link">
+              Français
             </a>
           </li>
         
@@ -312,13 +346,13 @@
     
     
       <li class="md-tabs__item">
-        <a href="commands/guide/" class="md-tabs__link">
+        <a href="automatic-sync/" class="md-tabs__link">
           
   
   
     
   
-  命令
+  使用 KToolBox
 
         </a>
       </li>
@@ -353,17 +387,20 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="shortcut/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="mcp/" class="md-tabs__link">
+          
   
   
     
   
-  iOS 快捷指令
+  集成
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -372,55 +409,20 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="coomer/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="faq/" class="md-tabs__link">
+          
   
   
     
   
-  Coomer
+  帮助与项目
 
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="faq/" class="md-tabs__link">
-        
-  
-  
+        </a>
+      </li>
     
-  
-  常见问题
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="api/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  API 文档
-
-      </a>
-    </li>
   
 
       
@@ -488,6 +490,8 @@
       
         
       
+        
+      
     
     
     
@@ -549,15 +553,75 @@
   
   
   
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebUI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    WebUI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="about-kemono/" class="md-nav__link">
+      <a href="webui/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    关于 Kemono
+    概览
   
 
     
@@ -578,14 +642,134 @@
   
   
     <li class="md-nav__item">
-      <a href="more/" class="md-nav__link">
+      <a href="webui/project-workflows/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    更多
+    项目工作流
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="webui/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    任务与实时更新
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="webui/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    部署参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="migration-v1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    迁移至 v1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="about-pawchive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于 Pawchive
   
 
     
@@ -619,6 +803,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -640,7 +828,7 @@
   <span class="md-ellipsis">
     
   
-    命令
+    使用 KToolBox
   
 
     
@@ -656,11 +844,67 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    命令
+    使用 KToolBox
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="automatic-sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自动同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="naming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    命名格式
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -676,7 +920,7 @@
   <span class="md-ellipsis">
     
   
-    向导
+    命令指南
   
 
     
@@ -704,7 +948,7 @@
   <span class="md-ellipsis">
     
   
-    参考
+    命令参考
   
 
     
@@ -850,15 +1094,71 @@
   
   
   
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    集成
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    集成
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="shortcut/" class="md-nav__link">
+      <a href="mcp/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    iOS 快捷指令
+    MCP
   
 
     
@@ -870,22 +1170,23 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="coomer/" class="md-nav__link">
+      <a href="api/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Coomer
+    Python API
   
 
     
@@ -897,9 +1198,73 @@
     </li>
   
 
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
     
       
       
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    帮助与项目
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    帮助与项目
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
   
   
   
@@ -924,22 +1289,23 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="api/" class="md-nav__link">
+      <a href="more/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    API 文档
+    项目信息
   
 
     
@@ -948,6 +1314,14 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -969,6 +1343,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -977,10 +1353,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#webui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        从 WebUI 开始
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        功能
+        选择下一步
       
     </span>
   </a>
@@ -991,99 +1378,21 @@
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        使用方法
+        进阶入口
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="使用方法">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        安装
+        安全默认值
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        命令
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="命令">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ❓ 获取帮助总览
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ❓ 获取某个命令的帮助信息
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ⬇️🖼️ 下载指定的帖子
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ⬇️🖌️ 下载作者的所有帖子
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_9" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        配置
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1152,172 +1461,83 @@
 
 
   
-    <a href="https://github.com/Ljzd-PRO/KToolBox/edit/master/docs/zh/index.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
-    </a>
-  
   
 
 
-<p style="text-decoration:none">
-  <img src="https://socialify.git.ci/Ljzd-PRO/KToolBox/image?description=1&font=Source+Code+Pro&forks=1&issues=1&language=1&name=1&owner=1&pattern=Diagonal+Stripes&pulls=1&stargazers=1&theme=Auto" alt="KToolBox"/>
-</p>
-
-<h1 style="text-align: center">
-  KToolBox
-</h1>
-
-<p style="text-align: center">
-  KToolBox 是一个用于下载
-  <a href="https://kemono.su/">Kemono.su / Kemono.party</a>
-  中帖子内容的实用命令行工具
-</p>
-
-<p style="text-align: center">
-  <a href="https://pypi.org/project/ktoolbox" target="_blank">
-    <img src="https://img.shields.io/github/v/release/Ljzd-PRO/KToolBox?logo=python" alt="Version">
-  </a>
-
-  <a href="./LICENSE">
-    <img src="https://img.shields.io/github/license/Ljzd-PRO/KToolBox" alt="BSD 3-Clause"/>
-  </a>
-
-  <a href="https://github.com/Ljzd-PRO/KToolBox/activity">
-    <img src="https://img.shields.io/github/last-commit/Ljzd-PRO/KToolBox/devel" alt="Last Commit"/>
-  </a>
-
-  <a href="https://codecov.io/gh/Ljzd-PRO/KToolBox" target="_blank">
-      <img src="https://codecov.io/gh/Ljzd-PRO/KToolBox/branch/master/graph/badge.svg?token=5XK9CYQHQN" alt="codecov"/>
-  </a>
-
-  <a href='https://ktoolbox.readthedocs.io/'>
-    <img src='https://readthedocs.org/projects/ktoolbox/badge/?version=latest' alt='Documentation Status' />
-  </a>
-
-  <a style="text-decoration:none">
-    <img src="https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue" alt="Platform Win | Linux | macOS"/>
-  </a>
-</p>
-
-<p style="text-align: center">
-  <a href='https://ko-fi.com/N4N51J14RW'>
-    <img src='https://ko-fi.com/img/githubbutton_sm.svg' alt='ko-fi' />
-  </a>
-</p>
-
-<h2 id="_1">功能<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h1 id="ktoolbox">欢迎使用 KToolBox<a class="headerlink" href="#ktoolbox" title="Permanent link">&para;</a></h1>
+<p>KToolBox 用于从 Pawchive 下载公开作品。推荐使用 WebUI：常用操作都有引导式表单，离开页面后仍可查看任务进度。</p>
+<div class="admonition warning">
+<p class="admonition-title">全新大版本</p>
+<p>v1 尚未经过足够广泛的实际验证，部分功能仍可能出错。迁移前请备份原有配置和下载；遇到异常时欢迎反馈。</p>
+</div>
+<h2 id="webui">从 WebUI 开始<a class="headerlink" href="#webui" title="Permanent link">&para;</a></h2>
+<ol>
+<li>安装 WebUI 版本。</li>
+<li>为同步项目创建一个目录。</li>
+<li>在该目录中启动 KToolBox。</li>
+</ol>
+<div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;ktoolbox[webui]&quot;</span>
+mkdir<span class="w"> </span>ktoolbox-project
+<span class="nb">cd</span><span class="w"> </span>ktoolbox-project
+ktoolbox<span class="w"> </span>webui<span class="w"> </span>.
+</code></pre></div>
+<p>浏览器会自动打开。使用终端中显示的 <code>admin</code> 用户名和随机密码登录，添加作者，然后创建第一个任务。需要时 KToolBox 会自动创建 <code>ktoolbox.toml</code>，并默认下载到 <code>downloads</code> 目录。</p>
+<p><img alt="KToolBox WebUI 概览" src="../assets/webui/40-overview-showcase-desktop-light.png" /></p>
+<h2 id="_1">选择下一步<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<div class="grid cards">
 <ul>
-<li>支持多文件并发下载</li>
-<li>API 调用和下载失败后 <strong>自动重试</strong></li>
-<li>支持下载单个帖子以及指定的画师的 <strong>全部帖子</strong></li>
-<li>可 <strong>更新已下载</strong> 的画师目录至最新状态</li>
-<li>支持自定义下载的帖子/画师的 <strong>文件和目录名格式</strong>、<strong>目录结构</strong></li>
-<li>例如帖子目录可设置为 <code>[2025-01-02]_TheTitle</code> 的格式，图片文件设置为按顺序的 <code>1.jpg</code>、<code>2.jpg</code> 等</li>
-<li>当你希望将某作者的所有帖子图片统一存放至一个目录下，以便预览，可以使用 <code>job.mix_posts</code> 配置项搭配自定义文件名格式，你将得到几百上千张图片的目录<ul>
-<li>如 <code>[2025-01-02]_TheTitle_1.jpg</code>、<code>[2025-01-02]_TheTitle_2.jpg</code>、<code>[2025-01-02]_TheTitle_3.jpg</code> 等</li>
-</ul>
+<li>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3m0-4a1 1 0 1 1-1 1 1 1 0 0 1 1-1m4.11 3.86a5 5 0 0 0 0-5.72A2.9 2.9 0 0 1 18 5a3 3 0 0 1 0 6 2.9 2.9 0 0 1-.89-.14M13 13c-6 0-6 4-6 4v2h12v-2s0-4-6-4m-4 4c0-.29.32-2 4-2 3.5 0 3.94 1.56 4 2m7 0v2h-3v-2a5.6 5.6 0 0 0-1.8-3.94C24 13.55 24 17 24 17M8 12H5v3H3v-3H0v-2h3V7h2v3h3Z"/></svg></span> <strong>添加作者并下载</strong></p>
+<p>根据<a href="webui/project-workflows/">项目工作流</a>添加作者、搜索作品、创建任务和调整忽略规则。</p>
 </li>
-<li>支持排除 <strong>指定格式</strong> 的文件或仅下载指定格式的文件</li>
-<li>例如当你不想下载庞大重复的 PSD 和压缩包文件时，可以在配置中排除 <code>.psd</code> 和 <code>.zip</code> 文件</li>
-<li>支持按**文件大小**过滤下载</li>
-<li>例如，如果你想在磁盘空间不足时避免下载大型视频文件，可以在配置中设置最大文件大小限制</li>
-<li>你也可以设置最小文件大小，以跳过下载缩略图或预览图片</li>
-<li>支持按帖子**标题关键词**过滤下载</li>
-<li>例如你只想下载标题中包含“表情、効果音差分”的帖子，可以使用 <code>sync-creator</code> 命令的 <code>--keywords</code> 选项</li>
-<li>如果你想排除标题中包含指定关键词的帖子，可以使用 <code>--keywords-exclude</code> 选项</li>
-<li>支持按帖子发布日期**时间范围**过滤下载</li>
-<li>能够解析帖子页面 HTML 多信息文本中包含的图片并下载</li>
-<li>这类帖子特征为：浏览器页面刚进入时图片可能没有加载出来，且没有预览图</li>
-<li>能够收集帖子页面中列出的**网盘链接**并保存至文本文件</li>
-<li>可搜索画师和帖子，并导出结果</li>
-<li>如果你希望自己处理画师和帖子数据，可以使用该功能导出 JSON 数据</li>
-<li>支持全平台，并提供 iOS 快捷指令</li>
-<li>纯 Python 分支可在 iOS 的 a-Shell 或浏览器的 Pyodide 上运行</li>
-<li>对于 <em>Coomer.st / Coomer.su / Coomer.party</em> 的支持，请查看文档 <a href="https://ktoolbox.readthedocs.io/latest/zh/coomer/">Coomer</a></li>
+<li>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 2.03c4.73.47 8.5 4.22 8.95 8.97A9.976 9.976 0 0 1 13 21.93v-2c3.64-.43 6.5-3.32 6.96-6.96A7.994 7.994 0 0 0 13 4.05V2.03m-2 .03v2c-1.43.2-2.78.78-3.9 1.68L5.67 4.26A9.83 9.83 0 0 1 11 2.06M4.26 5.67 5.69 7.1A8 8 0 0 0 4.05 11h-2c.2-1.96.95-3.81 2.21-5.33M2.06 13h2c.18 1.42.75 2.77 1.63 3.9l-1.42 1.43A10.04 10.04 0 0 1 2.06 13m5.04 5.37c1.13.88 2.48 1.45 3.9 1.63v2c-1.96-.21-3.82-1-5.33-2.26zM12 16.5 7.5 12H11V8h2v4h3.5z"/></svg></span> <strong>查看任务进度</strong></p>
+<p>在<a href="webui/tasks/">任务与实时更新</a>中了解进度、重试、暂停、停止、重新运行和安全清理。</p>
+</li>
+<li>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 11v1.5c3.19 0 5.09 3.55 3.33 6.21l-1.09-1.09C21.06 15.96 19.85 14 18 14v1.5l-2.25-2.25zm0 11v-1.5c-3.19 0-5.09-3.55-3.33-6.21l1.09 1.09C14.94 17.04 16.15 19 18 19v-1.5l2.25 2.25zm1-19h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9a5.9 5.9 0 0 1-1.5-2H5V9h14v1.59c.71.11 1.39.35 2 .72V5a2 2 0 0 0-2-2m0 4H5V5h14"/></svg></span> <strong>定时运行</strong></p>
+<p>根据<a href="automatic-sync/">自动同步指南</a>创建周期计划。</p>
+</li>
+<li>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h8v-2H4V8h16v4h2V8a2 2 0 0 0-2-2h-8l-2-2m8 10a.26.26 0 0 0-.26.21l-.19 1.32c-.3.13-.59.29-.85.47l-1.24-.5c-.11 0-.24 0-.31.13l-1 1.73c-.06.11-.04.24.06.32l1.06.82a4.2 4.2 0 0 0 0 1l-1.06.82a.26.26 0 0 0-.06.32l1 1.73c.06.13.19.13.31.13l1.24-.5c.26.18.54.35.85.47l.19 1.32c.02.12.12.21.26.21h2c.11 0 .22-.09.24-.21l.19-1.32c.3-.13.57-.29.84-.47l1.23.5c.13 0 .26 0 .33-.13l1-1.73a.26.26 0 0 0-.06-.32l-1.07-.82c.02-.17.04-.33.04-.5s-.01-.33-.04-.5l1.06-.82a.26.26 0 0 0 .06-.32l-1-1.73c-.06-.13-.19-.13-.32-.13l-1.23.5c-.27-.18-.54-.35-.85-.47l-.19-1.32A.236.236 0 0 0 20 14m-1 3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5c-.84 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5"/></svg></span> <strong>设置名称和目录</strong></p>
+<p>使用<a href="naming/">命名格式指南</a>设置默认输出和易读的目录结构。</p>
+</li>
 </ul>
-<h2 id="_2">使用方法<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<h3 id="_3">安装<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
-<p>你可以从 <a href="https://github.com/Ljzd-PRO/KToolBox/releases">releases</a> 页面下载可执行文件使用</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:1"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">一般情况</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block"></div>
 </div>
-</div>
-<p>推荐使用 pipx
-   <div class="highlight"><pre><span></span><code>pip3<span class="w"> </span>install<span class="w"> </span>pipx
-<span class="c1"># Windows</span>
-pipx<span class="w"> </span>install<span class="w"> </span>ktoolbox<span class="o">[</span>urwid,winloop<span class="o">]</span>
-<span class="c1"># Linux / macOS</span>
-pipx<span class="w"> </span>install<span class="w"> </span>ktoolbox<span class="o">[</span>urwid,uvloop<span class="o">]</span>
-</code></pre></div></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:1"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">纯 Python</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block"></div>
-</div>
-</div>
-<p>如果你在使用 <a href="https://pyodide.org/en/stable/">pyodide</a>，或者如果你只能使用纯Python，无法编译 <a href="https://docs.pydantic.dev/latest/">pydantic</a> v2.x.x
-   <div class="highlight"><pre><span></span><code>pip3<span class="w"> </span>install<span class="w"> </span>pipx
-pipx<span class="w"> </span>install<span class="w"> </span>ktoolbox
-</code></pre></div></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:1"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">对于 iOS a-Shell</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>pip3<span class="w"> </span>install<span class="w"> </span>ktoolbox-pure-py
-</code></pre></div>
-<div class="admonition info">
-<p class="admonition-title">关于 a-Shell</p>
-<p><a href="https://github.com/holzschu/a-shell">a-Shell</a> 是一个 iOS 终端 App，它只能运行纯 Python 脚本</p>
-</div>
-</div>
-</div>
-</div>
-<h3 id="_4">命令<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
-<p>使用帮助命令或前往 <a href="commands/guide/">命令</a> 页面查看更多帮助。</p>
-<h4 id="_5">❓ 获取帮助总览<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code>ktoolbox<span class="w"> </span>-h
-</code></pre></div>
-<h4 id="_6">❓ 获取某个命令的帮助信息<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code>ktoolbox<span class="w"> </span>download-post<span class="w"> </span>-h
-</code></pre></div>
-<h4 id="_7">⬇️🖼️ 下载指定的帖子<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code>ktoolbox<span class="w"> </span>download-post<span class="w"> </span>https://kemono.su/fanbox/user/49494721/post/6608808
-</code></pre></div>
-<details class="info">
-<summary>如果部分文件下载失败</summary>
-<p>如果部分文件下载失败，你可以尝试重新运行命令，已下载完成的文件会被 <strong>跳过</strong>。</p>
-</details>
-<h4 id="_8">⬇️🖌️ 下载作者的所有帖子<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># 下载作者/画师的所有帖子</span>
-ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemono.su/fanbox/user/9016
-
-<span class="c1"># 下载作者/画师最新的 10 个帖子</span>
-ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemono.su/fanbox/user/9016<span class="w"> </span>--length<span class="o">=</span><span class="m">10</span>
-
-<span class="c1"># 下载作者/画师最新的第 11 至 15 个帖子</span>
-ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemono.su/fanbox/user/9016<span class="w"> </span>--offset<span class="o">=</span><span class="m">10</span><span class="w"> </span>--length<span class="o">=</span><span class="m">5</span>
-
-<span class="c1"># 下载作者/画师从 2024-1-1 到 2024-3-1 的帖子</span>
-ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemono.su/fanbox/user/9016<span class="w"> </span>--start-time<span class="o">=</span><span class="m">2024</span>-1-1<span class="w"> </span>--end-time<span class="o">=</span><span class="m">2024</span>-3-1
-
-<span class="c1"># 下载作者/画师标题中包含“表情”的帖子</span>
-ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemono.su/fanbox/user/9016<span class="w"> </span>--keywords<span class="w"> </span><span class="s2">&quot;表情&quot;</span>
-
-<span class="c1"># 下载作者/画师标题中包含“表情、効果音差分”的帖子</span>
-ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemono.su/fanbox/user/9016<span class="w"> </span>--keywords<span class="w"> </span><span class="s2">&quot;表情,効果音差分&quot;</span>
-</code></pre></div>
-<h3 id="_9">配置<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
-<ul>
-<li>同时下载10个文件</li>
-<li>按照数字顺序重命名附件, 例如 <code>1.png</code>, <code>2.png</code>, ...</li>
-<li>将发布日期作为帖子目录名的开头，例如 <code>[2024-1-1]HelloWorld</code></li>
-<li>将帖子标题作为文件名的开头，例如 <code>HelloWorld_1.png</code>, <code>HelloWorld_2.png</code>, ...</li>
-<li>下载帖子修订版本</li>
-<li>排除下载 <code>.psd</code> 和 <code>.zip</code> 文件</li>
-<li>从帖子中提取云盘链接并保存到文本文件</li>
-<li>...</li>
-</ul>
-<p>前往 <a href="https://ktoolbox.readthedocs.io/latest/zh/configuration/guide/">配置-向导</a> 页面查看更多详情。</p>
+<h2 id="_2">进阶入口<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>普通用户首次运行不需要阅读以下页面。</p>
+<table>
+<thead>
+<tr>
+<th>目标</th>
+<th>指南</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>固定登录账号或部署到其他设备</td>
+<td><a href="webui/reference/">WebUI 部署参考</a></td>
+</tr>
+<tr>
+<td>在终端中自动化</td>
+<td><a href="commands/guide/">命令行指南</a>与<a href="commands/reference/">命令参考</a></td>
+</tr>
+<tr>
+<td>查看全部设置</td>
+<td><a href="configuration/guide/">配置指南</a>与<a href="configuration/reference/">配置参考</a></td>
+</tr>
+<tr>
+<td>连接 AI 客户端或 Python 程序</td>
+<td><a href="mcp/">MCP</a> 与 <a href="api/">Python API</a></td>
+</tr>
+<tr>
+<td>升级旧项目或解决问题</td>
+<td><a href="migration-v1/">迁移指南</a>与<a href="faq/">常见问题</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="_3">安全默认值<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p>WebUI 默认生成登录凭据、关闭敏感媒体预览，并使用项目内的输出目录。仅本机使用时请绑定 <code>127.0.0.1</code>；不可信网络应使用 HTTPS。KToolBox 不实现 Pawchive 账号或收藏操作。</p>
 
 
 
@@ -1406,13 +1626,13 @@ ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemo
         
         
           
-          <a href="about-kemono/" class="md-footer__link md-footer__link--next" aria-label="下一页: 关于 Kemono">
+          <a href="webui/" class="md-footer__link md-footer__link--next" aria-label="下一页: 概览">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                关于 Kemono
+                概览
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1453,7 +1673,7 @@ ktoolbox<span class="w"> </span>sync-creator<span class="w"> </span>https://kemo
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "search.share", "navigation.tracking", "navigation.tabs", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "search.share", "navigation.tracking", "navigation.tabs", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
