@@ -37,7 +37,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -45,7 +45,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1920,15 +1920,15 @@ KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
 <h2 id="_5">첨부 파일을 게시물 디렉터리에 직접 저장할 수 있나요?<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
 <p>네. **이름 형식 &gt; 디렉터리 구조**에서 첨부 파일 디렉터리를 <code>.</code> 또는 <code>./</code>로 설정하세요. 해당 프로젝트 설정은 다음과 같습니다.</p>
 <div class="highlight"><pre><span></span><code><span class="k">[naming.post_structure]</span>
-<span class="n">attachments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.&quot;</span>
+<span class="n">attachments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"."</span>
 </code></pre></div>
 <p>첨부 파일 이름이 기본 파일(표지), <code>post.json</code> 또는 다른 메타데이터와 겹치지 않도록 하세요. 이전 <code>KTOOLBOX_JOB__POST_STRUCTURE__ATTACHMENTS=./</code> 설정으로 받은 파일은 **이전 다운로드 변환 &gt; 설정 붙여넣기**에서 변환할 수 있습니다. 미리보기와 변환 절차는 <a href="../naming/">이름 형식 가이드</a>를 참고하세요. 다른 내부 경로에는 여전히 안전하고 비어 있지 않은 상대 이름이 필요합니다.</p>
 <h2 id="_6">긴 파일 이름을 피하려면 어떻게 하나요?<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
 <p>프로젝트 <code>[naming]</code>에서 순차 이름이나 형식 정밀도 제한을 사용하세요.</p>
 <div class="highlight"><pre><span></span><code><span class="k">[naming]</span>
 <span class="n">sequential_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<span class="n">post_dirname_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;[{published}]{post_id}_{title:.30}&quot;</span>
-<span class="n">filename_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;{title:.30}_{}&quot;</span>
+<span class="n">post_dirname_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"[{published}]{post_id}_{title:.30}"</span>
+<span class="n">filename_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"{title:.30}_{}"</span>
 </code></pre></div>
 <p>기존 다운로드를 변환하기 전에 <a href="../naming/">이름 형식 가이드</a>를 확인하세요.</p>
 <h2 id="_7">프록시를 설정하려면 어떻게 하나요?<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
@@ -1938,14 +1938,14 @@ KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALL_PROXY</span><span class="o">=</span>socks5://127.0.0.1:7897
 </code></pre></div>
 <p>PowerShell에서는:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">$env:HTTP_PROXY</span><span class="p">=</span><span class="s2">&quot;http://127.0.0.1:7897&quot;</span>
-<span class="nv">$env:HTTPS_PROXY</span><span class="p">=</span><span class="s2">&quot;http://127.0.0.1:7897&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">$env:HTTP_PROXY</span><span class="p">=</span><span class="s2">"http://127.0.0.1:7897"</span>
+<span class="nv">$env:HTTPS_PROXY</span><span class="p">=</span><span class="s2">"http://127.0.0.1:7897"</span>
 </code></pre></div>
 <h2 id="_8">설정 편집기가 열리지 않는 이유는 무엇인가요?<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h2>
 <p>선택적 터미널 UI 종속성을 설치하세요.</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;ktoolbox[urwid]&quot;</span>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"ktoolbox[urwid]"</span>
 <span class="c1"># 또는</span>
-pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;ktoolbox[urwid]&quot;</span><span class="w"> </span>--force
+pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">"ktoolbox[urwid]"</span><span class="w"> </span>--force
 </code></pre></div>
 <h2 id="_9">여러 크리에이터를 정기적으로 동기화하려면 어떻게 하나요?<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h2>
 <p>각 크리에이터를 프로젝트 목록에 추가하고 선택적으로 짧은 별칭을 지정한 다음 대상 없는 <code>sync</code>를 실행하세요.</p>
@@ -2129,7 +2129,7 @@ ktoolbox<span class="w"> </span>sync
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "search.share", "navigation.tracking", "navigation.tabs", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac\ub428", "clipboard.copy": "\ud074\ub9bd\ubcf4\ub4dc\ub85c \ubcf5\uc0ac", "search.result.more.one": "\uc774 \ubb38\uc11c\uc5d0\uc11c 1\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.more.other": "\uc774 \ubb38\uc11c\uc5d0\uc11c #\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.none": "\uac80\uc0c9\uc5b4\uc640 \uc77c\uce58\ud558\ub294 \ubb38\uc11c\uac00 \uc5c6\uc2b5\ub2c8\ub2e4", "search.result.one": "1\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.other": "#\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.placeholder": "\uac80\uc0c9\uc5b4\ub97c \uc785\ub825\ud558\uc138\uc694", "search.result.term.missing": "\ud3ec\ud568\ub418\uc9c0 \uc54a\uc740 \uac80\uc0c9\uc5b4", "select.version": "\ubc84\uc804 \uc120\ud0dd"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

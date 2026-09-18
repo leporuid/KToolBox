@@ -37,7 +37,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -45,7 +45,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1920,15 +1920,15 @@ KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
 <h2 id="les-pieces-jointes-peuvent-elles-etre-enregistrees-directement-dans-le-repertoire-de-la-publication">Les pièces jointes peuvent-elles être enregistrées directement dans le répertoire de la publication ?<a class="headerlink" href="#les-pieces-jointes-peuvent-elles-etre-enregistrees-directement-dans-le-repertoire-de-la-publication" title="Permanent link">&para;</a></h2>
 <p>Oui. Dans <strong>Format de nommage &gt; Structure des répertoires</strong>, indiquez <code>.</code> ou <code>./</code> comme répertoire des pièces jointes. Le réglage équivalent du projet est :</p>
 <div class="highlight"><pre><span></span><code><span class="k">[naming.post_structure]</span>
-<span class="n">attachments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.&quot;</span>
+<span class="n">attachments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"."</span>
 </code></pre></div>
 <p>Évitez les noms identiques au fichier principal (couverture), à <code>post.json</code> ou aux autres métadonnées. Pour convertir des téléchargements créés avec <code>KTOOLBOX_JOB__POST_STRUCTURE__ATTACHMENTS=./</code>, utilisez <strong>Conversion des anciens téléchargements &gt; Coller une configuration</strong>. Le <a href="../naming/">guide de nommage</a> décrit la prévisualisation et la conversion. Les autres chemins internes exigent toujours un nom relatif sûr et non vide.</p>
 <h2 id="comment-eviter-les-noms-de-fichiers-trop-longs">Comment éviter les noms de fichiers trop longs ?<a class="headerlink" href="#comment-eviter-les-noms-de-fichiers-trop-longs" title="Permanent link">&para;</a></h2>
 <p>Utilisez des noms séquentiels ou une limite de précision dans la table <code>[naming]</code> du projet :</p>
 <div class="highlight"><pre><span></span><code><span class="k">[naming]</span>
 <span class="n">sequential_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<span class="n">post_dirname_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;[{published}]{post_id}_{title:.30}&quot;</span>
-<span class="n">filename_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;{title:.30}_{}&quot;</span>
+<span class="n">post_dirname_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"[{published}]{post_id}_{title:.30}"</span>
+<span class="n">filename_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"{title:.30}_{}"</span>
 </code></pre></div>
 <p>Consultez le <a href="../naming/">guide du nommage</a> avant de convertir les téléchargements existants.</p>
 <h2 id="comment-configurer-un-proxy">Comment configurer un proxy ?<a class="headerlink" href="#comment-configurer-un-proxy" title="Permanent link">&para;</a></h2>
@@ -1938,14 +1938,14 @@ KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALL_PROXY</span><span class="o">=</span>socks5://127.0.0.1:7897
 </code></pre></div>
 <p>Dans PowerShell :</p>
-<div class="highlight"><pre><span></span><code><span class="nv">$env:HTTP_PROXY</span><span class="p">=</span><span class="s2">&quot;http://127.0.0.1:7897&quot;</span>
-<span class="nv">$env:HTTPS_PROXY</span><span class="p">=</span><span class="s2">&quot;http://127.0.0.1:7897&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">$env:HTTP_PROXY</span><span class="p">=</span><span class="s2">"http://127.0.0.1:7897"</span>
+<span class="nv">$env:HTTPS_PROXY</span><span class="p">=</span><span class="s2">"http://127.0.0.1:7897"</span>
 </code></pre></div>
 <h2 id="pourquoi-lediteur-de-configuration-ne-souvre-t-il-pas">Pourquoi l'éditeur de configuration ne s'ouvre-t-il pas ?<a class="headerlink" href="#pourquoi-lediteur-de-configuration-ne-souvre-t-il-pas" title="Permanent link">&para;</a></h2>
 <p>Installez la dépendance facultative de l'interface de terminal :</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;ktoolbox[urwid]&quot;</span>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"ktoolbox[urwid]"</span>
 <span class="c1"># ou</span>
-pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;ktoolbox[urwid]&quot;</span><span class="w"> </span>--force
+pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">"ktoolbox[urwid]"</span><span class="w"> </span>--force
 </code></pre></div>
 <h2 id="comment-synchroniser-regulierement-de-nombreux-createurs">Comment synchroniser régulièrement de nombreux créateurs ?<a class="headerlink" href="#comment-synchroniser-regulierement-de-nombreux-createurs" title="Permanent link">&para;</a></h2>
 <p>Ajoutez chaque créateur à la liste du projet, attribuez éventuellement un alias court, puis exécutez <code>sync</code> sans cible :</p>
@@ -2129,7 +2129,7 @@ ktoolbox<span class="w"> </span>sync
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "search.share", "navigation.tracking", "navigation.tabs", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

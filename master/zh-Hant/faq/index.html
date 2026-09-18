@@ -37,7 +37,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -45,7 +45,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1920,15 +1920,15 @@ KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
 <h2 id="_5">可以將附件直接儲存在作品目錄嗎？<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
 <p>可以。在「命名格式 → 目錄結構」中，將附件目錄設為 <code>.</code> 或 <code>./</code>。對應的專案設定為：</p>
 <div class="highlight"><pre><span></span><code><span class="k">[naming.post_structure]</span>
-<span class="n">attachments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.&quot;</span>
+<span class="n">attachments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"."</span>
 </code></pre></div>
 <p>請確保附件檔名不與主要檔案（封面）、<code>post.json</code> 或其他中繼資料重名。轉換舊 <code>KTOOLBOX_JOB__POST_STRUCTURE__ATTACHMENTS=./</code> 設定下載的檔案時，使用「舊下載目錄轉換 → 貼上設定」，依照<a href="../naming/">命名指南</a>預覽後轉換。其他內部路徑仍須使用安全且非空的相對名稱。</p>
 <h2 id="_6">如何避免檔名過長？<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
 <p>在專案 <code>[naming]</code> 中使用順序名稱或格式精確度限制：</p>
 <div class="highlight"><pre><span></span><code><span class="k">[naming]</span>
 <span class="n">sequential_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<span class="n">post_dirname_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;[{published}]{post_id}_{title:.30}&quot;</span>
-<span class="n">filename_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;{title:.30}_{}&quot;</span>
+<span class="n">post_dirname_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"[{published}]{post_id}_{title:.30}"</span>
+<span class="n">filename_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"{title:.30}_{}"</span>
 </code></pre></div>
 <p>轉換既有下載前請先閱讀<a href="../naming/">命名格式指南</a>。</p>
 <h2 id="proxy">如何設定 Proxy？<a class="headerlink" href="#proxy" title="Permanent link">&para;</a></h2>
@@ -1938,14 +1938,14 @@ KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALL_PROXY</span><span class="o">=</span>socks5://127.0.0.1:7897
 </code></pre></div>
 <p>PowerShell：</p>
-<div class="highlight"><pre><span></span><code><span class="nv">$env:HTTP_PROXY</span><span class="p">=</span><span class="s2">&quot;http://127.0.0.1:7897&quot;</span>
-<span class="nv">$env:HTTPS_PROXY</span><span class="p">=</span><span class="s2">&quot;http://127.0.0.1:7897&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">$env:HTTP_PROXY</span><span class="p">=</span><span class="s2">"http://127.0.0.1:7897"</span>
+<span class="nv">$env:HTTPS_PROXY</span><span class="p">=</span><span class="s2">"http://127.0.0.1:7897"</span>
 </code></pre></div>
 <h2 id="_7">為什麼設定編輯器無法開啟？<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
 <p>安裝可選的終端機 UI 相依套件：</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;ktoolbox[urwid]&quot;</span>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"ktoolbox[urwid]"</span>
 <span class="c1"># 或</span>
-pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;ktoolbox[urwid]&quot;</span><span class="w"> </span>--force
+pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">"ktoolbox[urwid]"</span><span class="w"> </span>--force
 </code></pre></div>
 <h2 id="_8">如何定期同步多位創作者？<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h2>
 <p>將每位創作者加入專案清單，可選擇指定簡短別名，然後執行不帶目標的 <code>sync</code>：</p>
@@ -2129,7 +2129,7 @@ ktoolbox<span class="w"> </span>sync
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "search.share", "navigation.tracking", "navigation.tabs", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u62f7\u8c9d", "clipboard.copy": "\u62f7\u8c9d", "search.result.more.one": "\u6b64\u9801\u5c1a\u6709 1 \u500b\u7b26\u5408\u7684\u9805\u76ee", "search.result.more.other": "\u6b64\u9801\u5c1a\u6709 # \u500b\u7b26\u5408\u7684\u9805\u76ee", "search.result.none": "\u6c92\u6709\u627e\u5230\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.other": "\u627e\u5230 # \u500b\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.placeholder": "\u9375\u5165\u4ee5\u958b\u59cb\u6aa2\u7d22", "search.result.term.missing": "\u7f3a\u5931", "select.version": "\u9078\u64c7\u7248\u672c"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
