@@ -1,5 +1,8 @@
 # 設定ガイド
 
+!!! tip "WebUI で設定を編集"
+    **グローバル設定**と**命名形式**ページが最も簡単です。手動ファイル、環境変数、配備自動化が必要な場合にこのガイドを使い、通常の設定は [WebUI ガイド](../webui.md)から始めてください。
+
 KToolBox には 2 つの設定レイヤーがあります。
 
 - `.env`、`prod.env`、プロセス変数は API、転送、グローバルなダウンロード動作を制御します。
@@ -24,9 +27,17 @@ KTOOLBOX_JOB__COUNT=4
 KTOOLBOX_JOB__CREATOR_CONCURRENCY=4
 KTOOLBOX_JOB__DOWNLOAD_FILE=True
 KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
+
+# 公開日時の正規化。
+KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__FALLBACK_SERVICE_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__FANBOX=Asia/Tokyo
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__PATREON=UTC
 ```
 
 すべての設定は省略できます。既定値については[設定リファレンス](reference.md)を参照してください。
+
+新しいプロジェクトを作成すると、KToolBox はホストの IANA タイムゾーンを検出し、その作成時に限って `KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE` を `.env` へ明示的に書き込みます。既存プロジェクトに設定がなくても、設定の読み込みや WebUI 起動時に自動変更せず、モデル既定値 `UTC` を使います。自動同期スケジュールのタイムゾーンは実行時刻を決め、この Service タイムゾーンは Pawchive の `published` の解釈を決めます。
 
 ## 設定を生成または編集
 
@@ -43,7 +54,7 @@ pipx install "ktoolbox[urwid]" --force
 ktoolbox config edit
 ```
 
-オプションの [WebUI](../webui.md) は、7 つの対応言語すべてでローカライズされたラベルと説明を型付きコントロールに表示し、最終値の取得元、シークレットのマスク、dotenv/TOML の直接編集、検証、差分プレビュー、ETag 競合保護を提供します。英語の設定 docstring は引き続きフィールドと意味の基準であり、他言語のカタログは全フィールドパスの網羅性を検査します。
+推奨する [WebUI](../webui.md) は、7 つの対応言語すべてでローカライズされたラベルと説明を型付きコントロールに表示し、最終値の取得元、シークレットのマスク、dotenv/TOML の直接編集、検証、差分プレビュー、ETag 競合保護を提供します。英語の設定 docstring は引き続きフィールドと意味の基準であり、他言語のカタログは全フィールドパスの網羅性を検査します。
 
 ログレベルなどの固定候補は Select、推奨値がありながら任意入力も有効な項目は ComboBox で表示します。パス選択は実際のファイルやディレクトリだけに提供し、`attachments` や `external_links.txt` など内部成果物の名前は通常のテキスト欄です。
 

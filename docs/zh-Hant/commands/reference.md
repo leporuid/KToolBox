@@ -1,6 +1,11 @@
 # 命令參考
 
+!!! note
+    本頁是面向 CLI 自動化的進階參考。大多數使用者可直接透過 [WebUI](../webui.md) 建立和管理相同工作。
+
 執行 `ktoolbox COMMAND --help` 查看權威 Cyclopts 說明。命令與選項名稱使用連字號；舊底線拼法仍會由隱藏的相容命令解析。
+
+在窄螢幕裝置上，可水平滑動表格以查看所有欄位。
 
 ## 全域選項
 
@@ -40,8 +45,9 @@
 | `--creator-id` | 字串 | 省略 | 創作者 ID。 |
 | `--post-id` | 字串 | 省略 | 作品 ID。 |
 | `--revision-id` | 字串 | 省略 | 從修訂清單選擇此修訂。 |
-| `-o`, `--output`, `--path` | 路徑 | `.` | 輸出根目錄。 |
+| `-o`, `--output`, `--path` | 路徑 | 專案預設值 | 覆寫目前工作使用的專案下載根目錄。 |
 | `--dump-post-data` / `--no-dump-post-data` | 布林值 | 啟用 | 將驗證後的中繼資料儲存到 `post.json`。 |
+| `--download-file` / `--no-download-file` | 布林值 | 環境設定 | 覆寫目前工作是否下載主要檔案（封面）。 |
 
 `download` 有意不套用清單忽略規則。
 
@@ -53,9 +59,10 @@
 | --- | --- | --- | --- |
 | `TARGET ...` | 字串 | 已啟用清單 | 零位或多位創作者。 |
 | `--service` + `--creator-id` | 字串 | 省略 | 加入一位明確創作者；兩者必須同時提供。 |
-| `-o`, `--output`, `--path` | 路徑 | `.` | 輸出根目錄。 |
+| `-o`, `--output`, `--path` | 路徑 | 專案預設值 | 覆寫目前工作使用的專案下載根目錄。 |
 | `--save-creator-indices` | 布林值 | 停用 | 成功生產後以原子方式儲存創作者索引。 |
 | `--mix-posts` / `--no-mix-posts` | 布林值 | 環境設定 | 覆寫 `job.mix_posts`。 |
+| `--download-file` / `--no-download-file` | 布林值 | 環境設定 | 覆寫是否下載每個作品的主要檔案（封面）。 |
 | `--start-time`, `--start` | 日期 | 省略 | 包含端點的發佈日期下限，`YYYY-MM-DD`。 |
 | `--end-time`, `--end` | 日期 | 省略 | 包含端點的發佈日期上限，`YYYY-MM-DD`。 |
 | `--offset` | 整數 | `0` | 第一篇作品索引。 |

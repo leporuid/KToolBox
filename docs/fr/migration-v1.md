@@ -2,6 +2,15 @@
 
 KToolBox v1 introduit des changements incompatibles du serveur et de l'API de la bibliothèque.
 
+## Parcours de migration recommandé
+
+1. Sauvegardez l'ancienne configuration et les répertoires téléchargés.
+2. Installez et démarrez la [WebUI](webui.md) dans le répertoire du projet existant.
+3. Examinez chaque ancien réglage détecté dans l'assistant avant d'accepter une modification.
+4. Prévisualisez la conversion des répertoires, puis lancez une petite synchronisation avant d'activer des programmes ou une archive complète.
+
+La WebUI crée les sauvegardes, vérifie les conflits et sépare la migration de configuration de la conversion facultative des répertoires. Les tableaux détaillés ci-dessous restent utiles aux scripts et intégrations Python.
+
 ## Avant la mise à niveau
 
 1. Sauvegardez votre fichier `.env` ou `prod.env`.
@@ -50,12 +59,16 @@ Les options s'affichent sous la forme `--creator-id`, sans les traits de soulign
 
 Les échecs de la CLI utilisent désormais l'état du processus : `0` pour le succès, `1` pour un échec distant, de créateur ou de téléchargement, `2` pour un échec d'argument ou de configuration et `130` pour une interruption. Les données JSON et les tableaux utilisent stdout ; la progression et les journaux utilisent stderr.
 
-## Liste des créateurs et règles d'exclusion
+## Paramètres du projet, créateurs et règles d'exclusion
 
-Créez `ktoolbox.toml` uniquement si vous avez besoin d'une liste réutilisable ou de règles d'exclusion structurées. L'absence du fichier représente un projet vide valide.
+`ktoolbox.toml` regroupe désormais le dossier de téléchargement par défaut, le format de nommage, les plans de synchronisation automatique, la liste réutilisable des créateurs et les règles d'exclusion structurées. En son absence, la CLI peut démarrer avec les valeurs intégrées ; WebUI crée un fichier de projet minimal après un avertissement.
 
 ```toml
 schema_version = 5
+default_output = "downloads"
+
+[naming]
+sequential_filename = true
 
 [[creators]]
 service = "fanbox"
@@ -64,11 +77,13 @@ alias = "studio-a"
 enabled = true
 ```
 
+Les chemins de sortie relatifs sont résolus depuis le dossier du projet. Consultez le [format de nommage](naming.md) avant de déplacer les téléchargements existants et ne configurez la [synchronisation automatique](automatic-sync.md) qu'après avoir vérifié la liste et le dossier de sortie.
+
 Déplacez les valeurs non vides de `KTOOLBOX_JOB__KEYWORDS_EXCLUDE` vers une condition de titre `field-match` globale. L'ancien réglage reste actif comme règle implicite et affiche un avertissement, mais KToolBox ne réécrit pas les fichiers locaux. Consultez le [guide de configuration](configuration/guide.md#post-blockers).
 
 `KTOOLBOX_JOB__CREATOR_CONCURRENCY` vaut `4` par défaut et limite les producteurs de créateurs. Le réglage existant `KTOOLBOX_JOB__COUNT` continue de limiter les travailleurs de fichiers.
 
-## WebUI facultative
+## Migrer avec la WebUI
 
 La version 1 ajoute un nouveau panneau HeroUI ; elle ne migre ni ne réutilise l'ancienne branche expérimentale `webui`. Installez `ktoolbox[webui]` et sélectionnez un répertoire de projet. Un fichier `ktoolbox.toml` absent est créé automatiquement après un avertissement. Sans compte configuré, chaque démarrage affiche le nom `admin` et un nouveau mot de passe aléatoire ; configurez un compte unique pour conserver des identifiants stables.
 

@@ -1,5 +1,8 @@
 # 설정 가이드
 
+!!! tip "WebUI에서 설정 편집"
+    **전역 설정**과 **이름 형식** 페이지가 가장 간단한 방법입니다. 수동 파일, 환경 변수 또는 배포 자동화가 필요할 때 이 가이드를 사용하고 일반 설정은 [WebUI 가이드](../webui.md)에서 시작하세요.
+
 KToolBox에는 두 가지 설정 계층이 있습니다.
 
 - `.env`, `prod.env` 및 프로세스 변수는 API, 전송 및 전역 다운로드 동작을 제어합니다.
@@ -24,9 +27,17 @@ KTOOLBOX_JOB__COUNT=4
 KTOOLBOX_JOB__CREATOR_CONCURRENCY=4
 KTOOLBOX_JOB__DOWNLOAD_FILE=True
 KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
+
+# 게시 시간 정규화.
+KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__FALLBACK_SERVICE_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__FANBOX=Asia/Tokyo
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__PATREON=UTC
 ```
 
 모든 설정은 선택 사항입니다. 기본값은 [설정 참조](reference.md)를 확인하세요.
+
+새 프로젝트를 만들 때 KToolBox는 호스트의 IANA 시간대를 감지하고 생성 시 한 번만 `KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE`을 `.env`에 명시적으로 기록합니다. 기존 프로젝트에 설정이 없더라도 설정 로드나 WebUI 시작 중에는 파일을 변경하지 않고 모델 기본값 `UTC`를 사용합니다. 자동 동기화 일정의 시간대는 실행 시각을 정하며, 여기의 Service 시간대는 Pawchive `published` 값을 해석하는 방법을 정합니다.
 
 ## 설정 생성 또는 편집
 
@@ -43,7 +54,7 @@ pipx install "ktoolbox[urwid]" --force
 ktoolbox config edit
 ```
 
-선택적 [WebUI](../webui.md)는 7개 지원 언어 모두에서 현지화된 레이블과 설명을 형식 지정 컨트롤로 제공하며, 최종 값 출처 표시, 비밀 마스킹, 원시 dotenv/TOML 편집, 검증, 차이 미리 보기 및 ETag 충돌 보호를 제공합니다. 영어 설정 docstring은 계속 필드와 의미의 기준이며, 다른 언어 카탈로그는 전체 필드 경로 범위를 검사합니다.
+권장 [WebUI](../webui.md)는 7개 지원 언어 모두에서 현지화된 레이블과 설명을 형식 지정 컨트롤로 제공하며, 최종 값 출처 표시, 비밀 마스킹, 원시 dotenv/TOML 편집, 검증, 차이 미리 보기 및 ETag 충돌 보호를 제공합니다. 영어 설정 docstring은 계속 필드와 의미의 기준이며, 다른 언어 카탈로그는 전체 필드 경로 범위를 검사합니다.
 
 로그 수준 같은 고정 선택지는 Select로, 추천값이 있지만 사용자 지정 입력도 유효한 필드는 ComboBox로 표시합니다. 경로 선택기는 실제 파일과 디렉터리에만 제공하며 `attachments`, `external_links.txt` 같은 내부 산출물 이름은 일반 텍스트 필드로 유지합니다.
 

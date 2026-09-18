@@ -352,6 +352,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/creators/{platform}/{creator_id}/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Load a creator avatar
+         * @description Return a validated same-origin creator avatar for an authenticated WebUI session.
+         */
+        get: operations["creator_avatar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/creators/{platform}/{creator_id}/banner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Load a creator banner
+         * @description Return a validated same-origin creator banner for an authenticated WebUI session.
+         */
+        get: operations["creator_banner"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Load a Pawchive image
+         * @description Return a validated thumbnail, preview, or original image from the configured Pawchive file host.
+         */
+        get: operations["media_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tasks": {
         parameters: {
             query?: never;
@@ -1423,6 +1483,8 @@ export interface components {
             save_creator_indices: boolean;
             /** Mix Posts */
             mix_posts?: boolean | null;
+            /** Download File */
+            download_file?: boolean | null;
             /** Keywords */
             keywords?: string[];
             /** Keywords Exclude */
@@ -1619,6 +1681,8 @@ export interface components {
             path_selector?: components["schemas"]["PathSelectorResponse"] | null;
             /** Choice Mode */
             choice_mode?: ("fixed" | "suggested") | null;
+            /** Editor */
+            editor?: "service_timezones" | null;
             /** Choices */
             choices?: components["schemas"]["ConfigChoiceResponse"][];
         };
@@ -1668,9 +1732,11 @@ export interface components {
             enabled: boolean;
             /** Name */
             name?: string | null;
+            avatar: components["schemas"]["MediaAssetResponse"];
+            banner: components["schemas"]["MediaAssetResponse"];
         };
-        /** CreatorSummary */
-        CreatorSummary: {
+        /** CreatorSearchItemResponse */
+        CreatorSearchItemResponse: {
             /** Favorited */
             favorited: number;
             /** Id */
@@ -1683,6 +1749,8 @@ export interface components {
             service: string;
             /** Updated */
             updated: number | string;
+            avatar: components["schemas"]["MediaAssetResponse"];
+            banner: components["schemas"]["MediaAssetResponse"];
         } & {
             [key: string]: unknown;
         };
@@ -1767,6 +1835,8 @@ export interface components {
              * @default true
              */
             dump_post_data: boolean;
+            /** Download File */
+            download_file?: boolean | null;
         };
         /**
          * FailureCode
@@ -1804,12 +1874,16 @@ export interface components {
         FailureStage: "creator_profile" | "work_list" | "work_detail" | "revisions" | "job_generation" | "file_request" | "file_write" | "index_write";
         /** FileReference */
         FileReference: {
+            /** Id */
+            id?: string | null;
             /** Name */
             name?: string | null;
             /** Path */
             path?: string | null;
             /** Deferred */
             deferred?: boolean | null;
+            /** Preview Only */
+            preview_only?: boolean | null;
         } & {
             [key: string]: unknown;
         };
@@ -2025,6 +2099,132 @@ export interface components {
                 [key: string]: string | number | boolean | string[] | null;
             };
         };
+        /** MCPPostResponse */
+        MCPPostResponse: {
+            /** Id */
+            id: string;
+            /** User */
+            user: string;
+            /** Service */
+            service: string;
+            /** Title */
+            title?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Substring */
+            substring?: string | null;
+            /** Embed */
+            embed?: {
+                [key: string]: unknown;
+            } | null;
+            /** Shared File */
+            shared_file?: boolean | null;
+            /** Added */
+            added?: string | null;
+            /** Published */
+            published?: string | null;
+            /** Edited */
+            edited?: string | null;
+            file?: components["schemas"]["FileReference"] | null;
+            /** Attachments */
+            attachments?: components["schemas"]["FileReference"][] | null;
+            /** Poll */
+            poll?: {
+                [key: string]: unknown;
+            } | null;
+            /** Captions */
+            captions?: unknown[] | null;
+            /** Tags */
+            tags?: string | unknown[] | null;
+            /** Origin */
+            origin?: string | null;
+            /** Preview State */
+            preview_state?: string | null;
+            /** Has Full */
+            has_full?: boolean | null;
+            /** Preview Attempts */
+            preview_attempts?: number | null;
+            /** Detail Fetched */
+            detail_fetched?: boolean | null;
+            /** Import Size Cap Gb */
+            import_size_cap_gb?: number | null;
+            /** Next */
+            next?: string | null;
+            /** Prev */
+            prev?: string | null;
+            /** Effective Published */
+            effective_published?: string | null;
+            /** Published Service Timezone */
+            published_service_timezone: string;
+            /** Published Target Timezone */
+            published_target_timezone: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** MCPRevisionResponse */
+        MCPRevisionResponse: {
+            /** Id */
+            id: string;
+            /** User */
+            user: string;
+            /** Service */
+            service: string;
+            /** Title */
+            title?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Substring */
+            substring?: string | null;
+            /** Embed */
+            embed?: {
+                [key: string]: unknown;
+            } | null;
+            /** Shared File */
+            shared_file?: boolean | null;
+            /** Added */
+            added?: string | null;
+            /** Published */
+            published?: string | null;
+            /** Edited */
+            edited?: string | null;
+            file?: components["schemas"]["FileReference"] | null;
+            /** Attachments */
+            attachments?: components["schemas"]["FileReference"][] | null;
+            /** Poll */
+            poll?: {
+                [key: string]: unknown;
+            } | null;
+            /** Captions */
+            captions?: unknown[] | null;
+            /** Tags */
+            tags?: string | unknown[] | null;
+            /** Origin */
+            origin?: string | null;
+            /** Preview State */
+            preview_state?: string | null;
+            /** Has Full */
+            has_full?: boolean | null;
+            /** Preview Attempts */
+            preview_attempts?: number | null;
+            /** Detail Fetched */
+            detail_fetched?: boolean | null;
+            /** Import Size Cap Gb */
+            import_size_cap_gb?: number | null;
+            /** Next */
+            next?: string | null;
+            /** Prev */
+            prev?: string | null;
+            /** Revision Id */
+            revision_id: number;
+            /** Effective Published */
+            effective_published?: string | null;
+            /** Published Service Timezone */
+            published_service_timezone: string;
+            /** Published Target Timezone */
+            published_target_timezone: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** MCPStatusResponse */
         MCPStatusResponse: {
             /**
@@ -2148,6 +2348,20 @@ export interface components {
             /** Open World */
             open_world: boolean;
         };
+        /** MediaAssetResponse */
+        MediaAssetResponse: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "avatar" | "banner" | "cover" | "attachment" | "content";
+            /** Thumbnail Url */
+            thumbnail_url: string;
+            /** Preview Url */
+            preview_url: string;
+            /** Original Url */
+            original_url: string;
+        };
         /** NamingApplyRequest */
         NamingApplyRequest: {
             /** Preview Id */
@@ -2168,6 +2382,7 @@ export interface components {
              */
             resolved_default_output: string;
             naming: components["schemas"]["ProjectNamingConfiguration"];
+            published_time: components["schemas"]["PublishedTimePolicySnapshot"];
             /** Revision */
             revision: string;
             /**
@@ -2273,11 +2488,12 @@ export interface components {
             /** Revision */
             revision: string;
             naming: components["schemas"]["ProjectNamingConfiguration"];
+            published_time: components["schemas"]["PublishedTimePolicySnapshot"];
             /**
              * Origin
              * @enum {string}
              */
-            origin: "project_current" | "project_change" | "legacy_migration" | "recovered";
+            origin: "project_current" | "project_change" | "legacy_migration" | "recovered" | "legacy_raw";
             /**
              * Created At
              * Format: date-time
@@ -2312,6 +2528,11 @@ export interface components {
             id: string;
             /** Revision */
             revision: string;
+            /**
+             * Target Layout Revision
+             * @default
+             */
+            target_layout_revision: string;
             /** Fingerprint */
             fingerprint: string;
             /** Roots */
@@ -2380,6 +2601,11 @@ export interface components {
             warnings: components["schemas"]["NamingSourceWarningResponse"][];
             /** Differences */
             differences: components["schemas"]["NamingSourceDifferenceResponse"][];
+            /**
+             * Default Published Time Mode
+             * @enum {string}
+             */
+            default_published_time_mode: "kemono_utc" | "pawchive_raw";
         };
         /** NamingSourceWarningResponse */
         NamingSourceWarningResponse: {
@@ -2416,6 +2642,9 @@ export interface components {
             naming: components["schemas"]["ProjectNamingConfiguration"];
             /** Digest */
             digest: string;
+            /** Published Time Mode */
+            published_time_mode?: ("kemono_utc" | "pawchive_raw" | "custom") | null;
+            published_time?: components["schemas"]["PublishedTimePolicySnapshot"] | null;
         };
         /** PathSelectorResponse */
         PathSelectorResponse: {
@@ -2435,8 +2664,8 @@ export interface components {
              */
             value_mode: "absolute" | "project_relative";
         };
-        /** Post */
-        Post: {
+        /** PawchivePostDetailResponse */
+        PawchivePostDetailResponse: {
             /** Id */
             id: string;
             /** User */
@@ -2488,6 +2717,210 @@ export interface components {
             next?: string | null;
             /** Prev */
             prev?: string | null;
+            cover?: components["schemas"]["MediaAssetResponse"] | null;
+            /** Effective Published */
+            effective_published?: string | null;
+            /** Published Service Timezone */
+            published_service_timezone: string;
+            /** Published Target Timezone */
+            published_target_timezone: string;
+            /** Media */
+            media?: components["schemas"]["MediaAssetResponse"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** PawchivePostSummaryResponse */
+        PawchivePostSummaryResponse: {
+            /** Id */
+            id: string;
+            /** User */
+            user: string;
+            /** Service */
+            service: string;
+            /** Title */
+            title?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Substring */
+            substring?: string | null;
+            /** Embed */
+            embed?: {
+                [key: string]: unknown;
+            } | null;
+            /** Shared File */
+            shared_file?: boolean | null;
+            /** Added */
+            added?: string | null;
+            /** Published */
+            published?: string | null;
+            /** Edited */
+            edited?: string | null;
+            file?: components["schemas"]["FileReference"] | null;
+            /** Attachments */
+            attachments?: components["schemas"]["FileReference"][] | null;
+            /** Poll */
+            poll?: {
+                [key: string]: unknown;
+            } | null;
+            /** Captions */
+            captions?: unknown[] | null;
+            /** Tags */
+            tags?: string | unknown[] | null;
+            /** Origin */
+            origin?: string | null;
+            /** Preview State */
+            preview_state?: string | null;
+            /** Has Full */
+            has_full?: boolean | null;
+            /** Preview Attempts */
+            preview_attempts?: number | null;
+            /** Detail Fetched */
+            detail_fetched?: boolean | null;
+            /** Import Size Cap Gb */
+            import_size_cap_gb?: number | null;
+            /** Next */
+            next?: string | null;
+            /** Prev */
+            prev?: string | null;
+            cover?: components["schemas"]["MediaAssetResponse"] | null;
+            /** Effective Published */
+            effective_published?: string | null;
+            /** Published Service Timezone */
+            published_service_timezone: string;
+            /** Published Target Timezone */
+            published_target_timezone: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PawchiveRevisionDetailResponse */
+        PawchiveRevisionDetailResponse: {
+            /** Id */
+            id: string;
+            /** User */
+            user: string;
+            /** Service */
+            service: string;
+            /** Title */
+            title?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Substring */
+            substring?: string | null;
+            /** Embed */
+            embed?: {
+                [key: string]: unknown;
+            } | null;
+            /** Shared File */
+            shared_file?: boolean | null;
+            /** Added */
+            added?: string | null;
+            /** Published */
+            published?: string | null;
+            /** Edited */
+            edited?: string | null;
+            file?: components["schemas"]["FileReference"] | null;
+            /** Attachments */
+            attachments?: components["schemas"]["FileReference"][] | null;
+            /** Poll */
+            poll?: {
+                [key: string]: unknown;
+            } | null;
+            /** Captions */
+            captions?: unknown[] | null;
+            /** Tags */
+            tags?: string | unknown[] | null;
+            /** Origin */
+            origin?: string | null;
+            /** Preview State */
+            preview_state?: string | null;
+            /** Has Full */
+            has_full?: boolean | null;
+            /** Preview Attempts */
+            preview_attempts?: number | null;
+            /** Detail Fetched */
+            detail_fetched?: boolean | null;
+            /** Import Size Cap Gb */
+            import_size_cap_gb?: number | null;
+            /** Next */
+            next?: string | null;
+            /** Prev */
+            prev?: string | null;
+            /** Revision Id */
+            revision_id: number;
+            cover?: components["schemas"]["MediaAssetResponse"] | null;
+            /** Effective Published */
+            effective_published?: string | null;
+            /** Published Service Timezone */
+            published_service_timezone: string;
+            /** Published Target Timezone */
+            published_target_timezone: string;
+            /** Media */
+            media?: components["schemas"]["MediaAssetResponse"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** PawchiveRevisionSummaryResponse */
+        PawchiveRevisionSummaryResponse: {
+            /** Id */
+            id: string;
+            /** User */
+            user: string;
+            /** Service */
+            service: string;
+            /** Title */
+            title?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Substring */
+            substring?: string | null;
+            /** Embed */
+            embed?: {
+                [key: string]: unknown;
+            } | null;
+            /** Shared File */
+            shared_file?: boolean | null;
+            /** Added */
+            added?: string | null;
+            /** Published */
+            published?: string | null;
+            /** Edited */
+            edited?: string | null;
+            file?: components["schemas"]["FileReference"] | null;
+            /** Attachments */
+            attachments?: components["schemas"]["FileReference"][] | null;
+            /** Poll */
+            poll?: {
+                [key: string]: unknown;
+            } | null;
+            /** Captions */
+            captions?: unknown[] | null;
+            /** Tags */
+            tags?: string | unknown[] | null;
+            /** Origin */
+            origin?: string | null;
+            /** Preview State */
+            preview_state?: string | null;
+            /** Has Full */
+            has_full?: boolean | null;
+            /** Preview Attempts */
+            preview_attempts?: number | null;
+            /** Detail Fetched */
+            detail_fetched?: boolean | null;
+            /** Import Size Cap Gb */
+            import_size_cap_gb?: number | null;
+            /** Next */
+            next?: string | null;
+            /** Prev */
+            prev?: string | null;
+            /** Revision Id */
+            revision_id: number;
+            cover?: components["schemas"]["MediaAssetResponse"] | null;
+            /** Effective Published */
+            effective_published?: string | null;
+            /** Published Service Timezone */
+            published_service_timezone: string;
+            /** Published Target Timezone */
+            published_target_timezone: string;
         } & {
             [key: string]: unknown;
         };
@@ -2551,7 +2984,7 @@ export interface components {
             creator_dirname_format: string;
             /**
              * Post Dirname Format
-             * @default {title}
+             * @default {title} [{post_id}]
              */
             post_dirname_format: string;
             /**
@@ -2567,7 +3000,7 @@ export interface components {
             mix_posts: boolean;
             /**
              * Sequential Filename
-             * @default false
+             * @default true
              */
             sequential_filename: boolean;
             /** Sequential Filename Excludes */
@@ -2661,64 +3094,31 @@ export interface components {
             dotenv_files: string[];
             /** Version */
             version: string;
+            /** Published Target Timezone */
+            published_target_timezone: string;
         };
-        /** Revision */
-        Revision: {
-            /** Id */
-            id: string;
-            /** User */
-            user: string;
-            /** Service */
-            service: string;
-            /** Title */
-            title?: string | null;
-            /** Content */
-            content?: string | null;
-            /** Substring */
-            substring?: string | null;
-            /** Embed */
-            embed?: {
-                [key: string]: unknown;
-            } | null;
-            /** Shared File */
-            shared_file?: boolean | null;
-            /** Added */
-            added?: string | null;
-            /** Published */
-            published?: string | null;
-            /** Edited */
-            edited?: string | null;
-            file?: components["schemas"]["FileReference"] | null;
-            /** Attachments */
-            attachments?: components["schemas"]["FileReference"][] | null;
-            /** Poll */
-            poll?: {
-                [key: string]: unknown;
-            } | null;
-            /** Captions */
-            captions?: unknown[] | null;
-            /** Tags */
-            tags?: string | unknown[] | null;
-            /** Origin */
-            origin?: string | null;
-            /** Preview State */
-            preview_state?: string | null;
-            /** Has Full */
-            has_full?: boolean | null;
-            /** Preview Attempts */
-            preview_attempts?: number | null;
-            /** Detail Fetched */
-            detail_fetched?: boolean | null;
-            /** Import Size Cap Gb */
-            import_size_cap_gb?: number | null;
-            /** Next */
-            next?: string | null;
-            /** Prev */
-            prev?: string | null;
-            /** Revision Id */
-            revision_id: number;
-        } & {
-            [key: string]: unknown;
+        /** PublishedTimePolicySnapshot */
+        PublishedTimePolicySnapshot: {
+            /**
+             * Mode
+             * @default normalized
+             * @enum {string}
+             */
+            mode: "normalized" | "legacy_raw" | "kemono_utc";
+            /**
+             * Target Timezone
+             * @default UTC
+             */
+            target_timezone: string;
+            /**
+             * Fallback Service Timezone
+             * @default UTC
+             */
+            fallback_service_timezone: string;
+            /** Service Timezones */
+            service_timezones?: {
+                [key: string]: string;
+            };
         };
         /** SessionResponse */
         SessionResponse: {
@@ -2798,6 +3198,8 @@ export interface components {
             save_creator_indices: boolean;
             /** Mix Posts */
             mix_posts?: boolean | null;
+            /** Download File */
+            download_file?: boolean | null;
             /** Start Time */
             start_time?: string | null;
             /** End Time */
@@ -3688,7 +4090,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreatorSummary"][];
+                    "application/json": components["schemas"]["CreatorSearchItemResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3723,7 +4125,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Post"][];
+                    "application/json": components["schemas"]["PawchivePostSummaryResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3758,7 +4160,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Post"] | components["schemas"]["Revision"];
+                    "application/json": components["schemas"]["PawchivePostDetailResponse"] | components["schemas"]["PawchiveRevisionDetailResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3791,7 +4193,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Revision"][];
+                    "application/json": components["schemas"]["PawchiveRevisionSummaryResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3821,6 +4223,115 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteVersionResponse"];
+                };
+            };
+        };
+    };
+    creator_avatar: {
+        parameters: {
+            query: {
+                variant: "thumbnail" | "preview" | "original";
+            };
+            header?: never;
+            path: {
+                platform: string;
+                creator_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Validated image bytes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": unknown;
+                    "image/jpeg": unknown;
+                    "image/png": unknown;
+                    "image/gif": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    creator_banner: {
+        parameters: {
+            query: {
+                variant: "thumbnail" | "preview" | "original";
+            };
+            header?: never;
+            path: {
+                platform: string;
+                creator_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Validated image bytes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": unknown;
+                    "image/jpeg": unknown;
+                    "image/png": unknown;
+                    "image/gif": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    media_file: {
+        parameters: {
+            query: {
+                path: string;
+                variant: "thumbnail" | "preview" | "original";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Validated image bytes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": unknown;
+                    "image/jpeg": unknown;
+                    "image/png": unknown;
+                    "image/gif": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -5397,7 +5908,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Post"] | components["schemas"]["Revision"];
+                    "application/json": components["schemas"]["MCPPostResponse"] | components["schemas"]["MCPRevisionResponse"];
                 };
             };
             /** @description Validation Error */

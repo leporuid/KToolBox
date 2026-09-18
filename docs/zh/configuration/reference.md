@@ -1,6 +1,11 @@
 # 配置参考
 
+!!! note
+    本页是完整的底层参考。除非明确需要环境变量或生成配置，否则建议使用 [WebUI](../webui.md) 中的本地化表单。
+
 环境变量名称以 `KTOOLBOX_` 开头，嵌套模型字段使用 `__` 连接。表中标为 `path`、`set` 或 `list` 的类型由 Pydantic 解析；dotenv 文件中的集合应使用 JSON 数组。
+
+在窄屏设备上，可横向滑动表格查看全部列。
 
 ## 根配置
 
@@ -104,6 +109,14 @@ API 配置组有意不包含会话密钥。
 | `options.rule` | 条件组 | `field-match` 必填 | 根递归规则。 |
 
 条件组使用 `kind = "group"`、`mode = "any"` 或 `"all"`、非空 `conditions` 列表及可选 `negate`。字段条件使用 `kind = "field"`、安全点路径 `field`、`contains`、`equals`、`regex`、`exists` 之一，以及可选 `case_sensitive`、`negate` 或 `expected`。非 `exists` 操作符要求非空 `values`；`exists` 禁止 `values`。
+
+## `published_time`
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `target_timezone` | IANA 时区 | `UTC` | 命名、分组、筛选和 WebUI 展示使用的目标时区。 |
+| `fallback_service_timezone` | IANA 时区 | `UTC` | Service 未单独配置时，用来解释无时区 `published` 的时区。 |
+| `service_timezones` | 映射 | Fanbox 东京、Patreon UTC | 按 Pawchive Service 解释无时区 `published` 的 IANA 时区。 |
 
 ## `webui`
 

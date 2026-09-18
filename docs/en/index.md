@@ -1,74 +1,61 @@
-# KToolBox
+# Welcome to KToolBox
 
-KToolBox is an asynchronous command-line downloader, HeroUI project panel, and typed Python client for public [Pawchive](https://pawchive.pw/) data. Version 1 supports Pawchive exclusively and requires Python 3.10 through 3.14.
+KToolBox downloads public works from Pawchive. The WebUI is the recommended way to use it: common tasks are available as guided forms, and progress remains visible after you leave a page.
 
-## What it does
+!!! warning "New major version"
+    v1 has not yet received enough real-world validation. Some features may still fail. Back up existing settings and downloads before migrating, and report unexpected behavior.
 
-- Downloads one post or concurrently synchronizes a roster of creators.
-- Applies ordered global or creator-scoped blockers before creating download work.
-- Resumes partial files and skips files that already exist.
-- Filters by date, title, filename pattern, and file size.
-- Controls cover, attachment, content image, metadata, and external-link output separately.
-- Provides a persistent WebUI in seven languages for project configuration, roster and blocker editing, Pawchive queries, and task lifecycle control.
-- Exposes all 14 public Pawchive OpenAPI operations through validated Pydantic models.
+## Start with the WebUI
 
-Account-authenticated favorites operations are intentionally not implemented. A downloader session key, when configured, is sent only to the file host.
-
-## Install
-
-Using `pipx` keeps the application isolated:
+1. Install the WebUI package.
+2. Create one directory for your synchronization project.
+3. Start KToolBox in that directory.
 
 ```bash
-pipx install ktoolbox
+pipx install "ktoolbox[webui]"
+mkdir ktoolbox-project
+cd ktoolbox-project
+ktoolbox webui .
 ```
 
-Install optional terminal editor and optimized event-loop support:
+The browser opens automatically. Sign in with the `admin` username and random password printed in the terminal, add a creator, and create your first task. KToolBox creates `ktoolbox.toml` when needed and uses `downloads` as the default output directory.
 
-```bash
-# Linux / macOS
-pipx install "ktoolbox[urwid,uvloop]" --force
+![KToolBox WebUI overview](../assets/webui/40-overview-showcase-desktop-light.png)
 
-# Windows
-pipx install "ktoolbox[urwid,winloop]" --force
-```
+## Choose your next step
 
-Install the browser panel separately when needed:
+<div class="grid cards" markdown>
 
-```bash
-pipx install "ktoolbox[webui]" --force
-```
+-   :material-account-multiple-plus-outline: **Add creators and download**
 
-## Quick start
+    Follow the [project workflows](webui/project-workflows.md) to add creators, search works, create tasks, and adjust filters.
 
-```bash
-# Inspect commands and options.
-ktoolbox -h
-ktoolbox download -h
+-   :material-progress-download: **Watch a task**
 
-# Download one post.
-ktoolbox download https://pawchive.pw/fanbox/user/6570768/post/1836570
+    Learn about progress, retries, pause, stop, rerun, and cleanup in [tasks and live updates](webui/tasks.md).
 
-# Start with one post before synchronizing a larger range.
-ktoolbox sync https://pawchive.pw/fanbox/user/6570768 --length 1
-```
+-   :material-calendar-sync-outline: **Run on a schedule**
 
-![KToolBox command overview](../assets/cli-overview.png)
+    Create recurring plans with the [automatic synchronization guide](automatic-sync.md).
 
-Save multiple creators and synchronize all enabled entries:
+-   :material-folder-cog-outline: **Choose names and folders**
 
-```bash
-ktoolbox creator add fanbox:123 --alias studio-a
-ktoolbox creator add patreon:456 --alias studio-b
-ktoolbox sync
-```
+    Set the default output and readable layout with the [naming guide](naming.md).
 
-Existing files are skipped on repeat runs. An incomplete file with the configured temporary suffix is resumed when the file server supports byte ranges.
+</div>
 
-## Next steps
+## Advanced paths
 
-- [Command guide](commands/guide.md)
-- [WebUI guide](webui.md)
-- [Configuration guide](configuration/guide.md)
-- [Python API](api.md)
-- [Migrating to v1](migration-v1.md)
-- [FAQ](faq.md)
+You do not need these pages for a normal first run.
+
+| Goal | Guide |
+| --- | --- |
+| Keep a stable login or deploy beyond one computer | [WebUI deployment reference](webui/reference.md) |
+| Automate from a terminal | [CLI guide](commands/guide.md) and [command reference](commands/reference.md) |
+| Inspect every setting | [Configuration guide](configuration/guide.md) and [reference](configuration/reference.md) |
+| Connect an AI client or Python program | [MCP](mcp.md) and [Python API](api.md) |
+| Upgrade an existing project or fix a problem | [Migration guide](migration-v1.md) and [FAQ](faq.md) |
+
+## Safe defaults
+
+The WebUI starts with generated credentials, sensitive-media previews disabled, and a project-local output directory. For local-only access, bind to `127.0.0.1`; use HTTPS for untrusted networks. KToolBox never implements Pawchive account or favorites operations.

@@ -1,5 +1,8 @@
 # Configuration Guide
 
+!!! tip "Edit settings in the WebUI"
+    The **Global configuration** and **Naming format** pages are the simplest way to change settings. Use this guide when you need manual files, environment variables, or deployment automation. Start with the [WebUI guide](../webui.md) for ordinary setup.
+
 KToolBox has two configuration layers:
 
 - `.env`, `prod.env`, and process variables control API, transfer, and global download behavior.
@@ -24,9 +27,17 @@ KTOOLBOX_JOB__COUNT=4
 KTOOLBOX_JOB__CREATOR_CONCURRENCY=4
 KTOOLBOX_JOB__DOWNLOAD_FILE=True
 KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
+
+# Publication time normalization.
+KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__FALLBACK_SERVICE_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__FANBOX=Asia/Tokyo
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__PATREON=UTC
 ```
 
 All settings are optional. See the [configuration reference](reference.md) for defaults.
+
+When KToolBox creates a new project, it detects the host's IANA timezone and writes `KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE` to `.env` once. Existing projects are never modified merely because the setting is absent; they continue to use the model default `UTC`. An automatic-sync schedule timezone controls when a plan runs, while these Service timezones control how Pawchive `published` values are interpreted.
 
 ## Generate or edit configuration
 
@@ -43,7 +54,7 @@ pipx install "ktoolbox[urwid]" --force
 ktoolbox config edit
 ```
 
-The optional [WebUI](../webui.md) exposes localized labels and descriptions in all seven supported languages through typed controls, final-value source indicators, secret masking, raw dotenv/TOML editing, validation, diff preview, and ETag conflict protection. English configuration docstrings remain the field and semantic source; the other locale catalogs are checked for complete path coverage.
+The recommended [WebUI](../webui.md) exposes localized labels and descriptions in all seven supported languages through typed controls, final-value source indicators, secret masking, raw dotenv/TOML editing, validation, diff preview, and ETag conflict protection. English configuration docstrings remain the field and semantic source; the other locale catalogs are checked for complete path coverage.
 
 Fixed choices such as log levels render as Select controls; recommended values that still permit custom text render as ComboBoxes. Path pickers are limited to real directories and files, while internal artifact names such as `attachments` and `external_links.txt` remain ordinary text fields.
 

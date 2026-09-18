@@ -1,6 +1,11 @@
 # 명령 참조
 
+!!! note
+    이 문서는 CLI 자동화를 위한 고급 참고 자료입니다. 대부분의 사용자는 [WebUI](../webui.md)에서 같은 작업을 만들고 관리할 수 있습니다.
+
 정식 Cyclopts 도움말은 `ktoolbox COMMAND --help`를 실행하여 확인하세요. 명령과 옵션 이름은 하이픈을 사용하며 이전 밑줄 표기도 숨겨진 호환성 명령에서 계속 해석됩니다.
+
+좁은 화면에서는 표를 가로로 스와이프하여 모든 열을 확인할 수 있습니다.
 
 ## 전역 옵션
 
@@ -40,8 +45,9 @@ Pawchive 게시물 URL 또는 `--service`, `--creator-id`, `--post-id`를 모두
 | `--creator-id` | 문자열 | 생략 | 크리에이터 ID. |
 | `--post-id` | 문자열 | 생략 | 게시물 ID. |
 | `--revision-id` | 문자열 | 생략 | 개정판 목록에서 이 개정판을 선택. |
-| `-o`, `--output`, `--path` | 경로 | `.` | 출력 루트. |
+| `-o`, `--output`, `--path` | 경로 | 프로젝트 기본값 | 이 작업에서 사용할 프로젝트 다운로드 루트를 재정의합니다. |
 | `--dump-post-data` / `--no-dump-post-data` | 불리언 | 활성화 | 검증된 메타데이터를 `post.json`에 저장. |
+| `--download-file` / `--no-download-file` | 불리언 | 환경 설정 | 이 작업의 기본 파일(표지) 다운로드 설정 재정의. |
 
 `download`는 의도적으로 목록 제외 규칙을 적용하지 않습니다.
 
@@ -53,9 +59,10 @@ Pawchive 게시물 URL 또는 `--service`, `--creator-id`, `--post-id`를 모두
 | --- | --- | --- | --- |
 | `TARGET ...` | 문자열 | 활성화된 목록 | 0명 이상의 크리에이터. |
 | `--service` + `--creator-id` | 문자열 | 생략 | 명시적 크리에이터 한 명 추가. 두 값을 함께 제공해야 함. |
-| `-o`, `--output`, `--path` | 경로 | `.` | 출력 루트. |
+| `-o`, `--output`, `--path` | 경로 | 프로젝트 기본값 | 이 작업에서 사용할 프로젝트 다운로드 루트를 재정의합니다. |
 | `--save-creator-indices` | 불리언 | 비활성화 | 성공적으로 생산한 후 크리에이터 인덱스를 원자적으로 저장. |
 | `--mix-posts` / `--no-mix-posts` | 불리언 | 환경 설정 | `job.mix_posts` 재정의. |
+| `--download-file` / `--no-download-file` | 불리언 | 환경 설정 | 각 작품의 기본 파일(표지) 다운로드 설정 재정의. |
 | `--start-time`, `--start` | 날짜 | 생략 | 게시 날짜의 포함 하한, `YYYY-MM-DD`. |
 | `--end-time`, `--end` | 날짜 | 생략 | 게시 날짜의 포함 상한, `YYYY-MM-DD`. |
 | `--offset` | 정수 | `0` | 첫 게시물 인덱스. |

@@ -302,6 +302,68 @@ code {
   box-shadow: var(--surface-shadow);
 }
 
+.sensitive-media-inline {
+  border: 1px solid var(--border-subtle);
+  background: var(--console-panel);
+  box-shadow: var(--surface-shadow);
+}
+
+.sensitive-media-status-icon {
+  background: var(--default);
+  color: var(--muted);
+}
+
+.sensitive-media-status-icon.is-enabled,
+.sensitive-media-trigger-enabled {
+  background: var(--warning-soft) !important;
+  color: var(--warning-soft-foreground) !important;
+}
+
+.sensitive-media-switch.is-enabled {
+  --switch-control-bg-checked: var(--ktoolbox-yellow);
+  --switch-control-bg-checked-hover: color-mix(in oklab, var(--ktoolbox-yellow) 86%, black 14%);
+}
+
+.sensitive-media-switch:not(.is-enabled) {
+  --switch-control-bg: color-mix(in oklab, var(--control-track-off) 72%, var(--foreground) 28%);
+  --switch-control-bg-hover: color-mix(in oklab, var(--control-track-off-hover) 68%, var(--foreground) 32%);
+  --switch-control-bg-pressed: var(--switch-control-bg-hover);
+}
+
+.sensitive-media-confirm-action {
+  background: var(--ktoolbox-yellow) !important;
+  color: #111827 !important;
+}
+
+.creator-avatar {
+  width: var(--creator-avatar-size);
+  height: var(--creator-avatar-size);
+  border: 1px solid color-mix(in oklab, var(--border-subtle) 78%, var(--accent) 22%);
+  background: color-mix(in oklab, var(--accent-soft) 58%, var(--console-panel) 42%);
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+.creator-avatar-initial {
+  color: var(--accent-strong);
+  font-size: calc(var(--creator-avatar-size) * 0.38);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.creator-banner {
+  aspect-ratio: 960 / 344;
+  background: color-mix(in oklab, var(--accent-soft) 72%, var(--console-panel) 28%);
+}
+
+.creator-search-media-card .creator-banner {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.creator-search-media-card .creator-search-avatar {
+  margin-top: -1.375rem;
+  border: 3px solid var(--console-panel);
+}
+
 .theme-swatch {
   border: 2px solid transparent;
   background: var(--swatch-color);

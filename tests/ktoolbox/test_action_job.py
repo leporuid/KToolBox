@@ -109,9 +109,54 @@ async def test_create_post_jobs_respects_allow_list_and_flat_mode(tmp_path: Path
 
     config.job.extract_content_images = True
     jobs = await create_job_from_post(item, tmp_path, post_dir=False, dump_post_data=False)
-    assert [job.alt_filename for job in jobs] == ["keep.png"]
+    assert [job.alt_filename for job in jobs] == ["1.png"]
     assert jobs[0].path == tmp_path
     assert not (tmp_path / "post.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_create_post_jobs_use_readable_sequential_names_by_default(tmp_path: Path) -> None:
+    item = post()
+    item.attachments = [
+        FileReference(name=None, path="/data/a1/7f34cda12e5b4d9e.png"),
+        FileReference(name=None, path="/data/b2/846be97fb83141a4.jpg"),
+    ]
+
+    jobs = await create_job_from_post(item, tmp_path / "post")
+
+    assert [job.alt_filename for job in jobs] == ["1.png", "2.jpg"]
+
+
+@pytest.mark.asyncio
+async def test_create_post_jobs_support_attachments_in_work_root(tmp_path: Path) -> None:
+    naming = ProjectNamingConfiguration.model_validate({"post_structure": {"attachments": "./"}})
+    item = post()
+    item.attachments = [FileReference(name="drawing.png", path="/drawing.png")]
+    item.file = FileReference(name="cover.png", path="/cover.png")
+
+    jobs = await create_job_from_post(item, tmp_path, naming=naming)
+
+    assert [(job.path, job.alt_filename) for job in jobs] == [
+        (tmp_path, "1.png"),
+        (tmp_path, "post_cover.png"),
+    ]
+    assert (tmp_path / "post.json").is_file()
+    assert not (tmp_path / "attachments").exists()
+
+
+@pytest.mark.asyncio
+async def test_create_post_jobs_can_override_primary_file_setting(tmp_path: Path) -> None:
+    config.job.download_attachments = False
+    item = post()
+    item.file = FileReference(name="cover.jpg", path="/cover.jpg")
+
+    config.job.download_file = False
+    enabled_jobs = await create_job_from_post(item, tmp_path / "enabled", download_file=True)
+    assert [job.type for job in enabled_jobs] == [PostFileTypeEnum.File]
+
+    config.job.download_file = True
+    disabled_jobs = await create_job_from_post(item, tmp_path / "disabled", download_file=False)
+    assert disabled_jobs == []
 
 
 @pytest.mark.asyncio

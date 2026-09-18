@@ -1,6 +1,11 @@
 # 設定リファレンス
 
+!!! note
+    これは完全な低レベルリファレンスです。環境変数や生成設定が必要な場合を除き、[WebUI](../webui.md) のローカライズされたフォームを推奨します。
+
 環境変数名は `KTOOLBOX_` で始まり、ネストしたモデルフィールドを `__` で結びます。`path`、`set`、`list` と示した型は Pydantic が解析します。dotenv 内のコレクションには JSON 配列を使ってください。
+
+狭い画面では、表を横方向にスワイプするとすべての列を確認できます。
 
 ## ルート
 
@@ -104,6 +109,14 @@ API グループには意図的にセッションキーがありません。
 | `options.rule` | 条件グループ | `field-match` で必須 | ルート再帰ルール。 |
 
 条件グループは `kind = "group"`、`mode = "any"` または `"all"`、空でない `conditions` リスト、オプションの `negate` を使います。フィールド条件は `kind = "field"`、安全なドット区切り `field`、`contains`、`equals`、`regex`、`exists` のいずれか、オプションの `case_sensitive`、`negate`、`expected` を使います。`exists` 以外では空でない `values` リストが必要で、`exists` では `values` を禁止します。
+
+## `published_time`
+
+| フィールド | 型 | 既定値 | 説明 |
+| --- | --- | --- | --- |
+| `target_timezone` | IANA タイムゾーン | `UTC` | 命名、分類、フィルター、WebUI 表示に使う対象タイムゾーン。 |
+| `fallback_service_timezone` | IANA タイムゾーン | `UTC` | 個別設定のない Service のタイムゾーンなし `published` を解釈するタイムゾーン。 |
+| `service_timezones` | マップ | Fanbox は東京、Patreon は UTC | Pawchive Service ごとにタイムゾーンなし `published` を解釈する IANA タイムゾーン。 |
 
 ## `webui`
 

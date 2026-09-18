@@ -1,74 +1,61 @@
-# KToolBox
+# 歡迎使用 KToolBox
 
-KToolBox 是面向 [Pawchive](https://pawchive.pw/) 公開資料的非同步命令列下載器、HeroUI 專案面板和型別化 Python 用戶端。v1 僅支援 Pawchive，需要 Python 3.10 至 3.14。
+KToolBox 用於從 Pawchive 下載公開作品。建議使用 WebUI：常用操作都有引導式表單，離開頁面後仍可查看工作進度。
 
-## 功能
+!!! warning "全新大版本"
+    v1 尚未經過足夠廣泛的實際驗證，部分功能仍可能出錯。遷移前請備份原有設定與下載；遇到異常時歡迎回報。
 
-- 下載單篇作品，或並行同步創作者清單。
-- 在建立下載工作前套用有順序的全域或創作者層級忽略規則。
-- 續傳未完成的檔案，並略過已經存在的檔案。
-- 依日期、標題、檔名模式和檔案大小篩選。
-- 分別控制封面、附件、正文圖片、中繼資料和外部連結輸出。
-- 提供支援七種語言的持久化 WebUI，用於管理專案設定、創作者清單、忽略規則、Pawchive 查詢與工作生命週期。
-- 透過經過驗證的 Pydantic 模型提供 Pawchive OpenAPI 的全部 14 個公開操作。
+## 從 WebUI 開始
 
-需要帳號驗證的收藏操作明確不予實作。下載器工作階段金鑰即使設定，也只會傳送到檔案主機。
-
-## 安裝
-
-建議使用 `pipx` 隔離安裝：
+1. 安裝 WebUI 版本。
+2. 為同步專案建立一個目錄。
+3. 在該目錄中啟動 KToolBox。
 
 ```bash
-pipx install ktoolbox
+pipx install "ktoolbox[webui]"
+mkdir ktoolbox-project
+cd ktoolbox-project
+ktoolbox webui .
 ```
 
-安裝可選的終端機設定編輯器和事件迴圈最佳化支援：
+瀏覽器會自動開啟。使用終端機顯示的 `admin` 使用者名稱與隨機密碼登入，加入創作者，然後建立第一個工作。需要時 KToolBox 會自動建立 `ktoolbox.toml`，並預設下載至 `downloads` 目錄。
 
-```bash
-# Linux / macOS
-pipx install "ktoolbox[urwid,uvloop]" --force
+![KToolBox WebUI 概覽](../assets/webui/40-overview-showcase-desktop-light.png)
 
-# Windows
-pipx install "ktoolbox[urwid,winloop]" --force
-```
+## 選擇下一步
 
-需要時另行安裝瀏覽器面板：
+<div class="grid cards" markdown>
 
-```bash
-pipx install "ktoolbox[webui]" --force
-```
+-   :material-account-multiple-plus-outline: **加入創作者並下載**
 
-## 快速開始
+    根據[專案工作流程](webui/project-workflows.md)加入創作者、搜尋作品、建立工作和調整忽略規則。
 
-```bash
-# 查看命令和選項。
-ktoolbox -h
-ktoolbox download -h
+-   :material-progress-download: **查看工作進度**
 
-# 下載單篇作品。
-ktoolbox download https://pawchive.pw/fanbox/user/6570768/post/1836570
+    在[工作與即時更新](webui/tasks.md)中了解進度、重試、暫停、停止、重新執行和安全清理。
 
-# 先從一篇作品開始，再按需要同步更大範圍。
-ktoolbox sync https://pawchive.pw/fanbox/user/6570768 --length 1
-```
+-   :material-calendar-sync-outline: **定時執行**
 
-![KToolBox 命令概覽](../assets/cli-overview.png)
+    根據[自動同步指南](automatic-sync.md)建立週期計畫。
 
-儲存多位創作者並同步所有已啟用項目：
+-   :material-folder-cog-outline: **設定名稱與目錄**
 
-```bash
-ktoolbox creator add fanbox:123 --alias studio-a
-ktoolbox creator add patreon:456 --alias studio-b
-ktoolbox sync
-```
+    使用[命名格式指南](naming.md)設定預設輸出和易讀的目錄結構。
 
-重複執行時會略過現有檔案。若檔案伺服器支援位元組範圍請求，帶有已設定暫存副檔名的未完成檔案會繼續下載。
+</div>
 
-## 後續步驟
+## 進階入口
 
-- [命令指南](commands/guide.md)
-- [WebUI 指南](webui.md)
-- [設定指南](configuration/guide.md)
-- [Python API](api.md)
-- [遷移至 v1](migration-v1.md)
-- [常見問題](faq.md)
+一般使用者首次執行不需要閱讀以下頁面。
+
+| 目標 | 指南 |
+| --- | --- |
+| 固定登入帳號或部署至其他裝置 | [WebUI 部署參考](webui/reference.md) |
+| 在終端機中自動化 | [命令列指南](commands/guide.md)與[命令參考](commands/reference.md) |
+| 查看所有設定 | [設定指南](configuration/guide.md)與[設定參考](configuration/reference.md) |
+| 連接 AI 用戶端或 Python 程式 | [MCP](mcp.md) 與 [Python API](api.md) |
+| 升級舊專案或解決問題 | [遷移指南](migration-v1.md)與[常見問題](faq.md) |
+
+## 安全預設值
+
+WebUI 預設產生登入憑證、關閉敏感媒體預覽，並使用專案內的輸出目錄。僅在本機使用時請繫結 `127.0.0.1`；不可信網路應使用 HTTPS。KToolBox 不實作 Pawchive 帳號或收藏操作。

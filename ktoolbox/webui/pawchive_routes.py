@@ -7,14 +7,36 @@ from pydantic import ValidationError
 
 from ktoolbox.action.search import search_creator, search_creator_post
 from ktoolbox.api.errors import PawchiveError, PawchiveNotFoundError
-from ktoolbox.api.generated import CreatorSummary, Post, Revision
+from ktoolbox.api.generated import Post, Revision
 from ktoolbox.api.utils import create_pawchive_client
 from ktoolbox.configuration import RuntimeContext
+from ktoolbox.publication_time import PublishedTimeError
 from ktoolbox.webui.auth import require_session
 from ktoolbox.webui.database import WebUISession
-from ktoolbox.webui.models import SiteVersionResponse
+from ktoolbox.webui.media import creator_search_item, post_detail, post_summary, revision_detail, revision_summary
+from ktoolbox.webui.models import (
+    CreatorSearchItemResponse,
+    PawchivePostDetailResponse,
+    PawchivePostSummaryResponse,
+    PawchiveRevisionDetailResponse,
+    PawchiveRevisionSummaryResponse,
+    SiteVersionResponse,
+)
 
 SessionDependency = Annotated[WebUISession, Depends(require_session)]
+
+
+def publication_time_http_error(error: PublishedTimeError) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail={
+            "code": "response_incompatible",
+            "message": "Pawchive returned an invalid publication time",
+            "service": error.service,
+            "timezone": error.timezone_name,
+            "fields": ["published"],
+        },
+    )
 
 
 def create_pawchive_router() -> APIRouter:
@@ -29,23 +51,23 @@ def create_pawchive_router() -> APIRouter:
             detail={"code": "upstream_error", "message": message},
         )
 
-    @router.get("/creators", response_model=list[CreatorSummary])
+    @router.get("/creators", response_model=list[CreatorSearchItemResponse])
     async def creators(
         request: Request,
         _: SessionDependency,
         creator_id: str | None = None,
         name: str | None = None,
         service: str | None = None,
-    ) -> list[CreatorSummary]:
+    ) -> list[CreatorSearchItemResponse]:
         context = runtime(request)
         with context.activate():
             async with create_pawchive_client() as client:
                 result = await search_creator(id=creator_id, name=name, service=service, client=client)
         if not result:
             raise upstream_error(result.message or "creator search failed")
-        return list(result.data or ())
+        return [creator_search_item(creator) for creator in result.data or ()]
 
-    @router.get("/posts", response_model=list[Post])
+    @router.get("/posts", response_model=list[PawchivePostSummaryResponse])
     async def posts(
         request: Request,
         _: SessionDependency,
@@ -54,7 +76,7 @@ def create_pawchive_router() -> APIRouter:
         service: str | None = None,
         query: str | None = None,
         offset: int | None = None,
-    ) -> list[Post]:
+    ) -> list[PawchivePostSummaryResponse]:
         context = runtime(request)
         with context.activate():
             async with create_pawchive_client() as client:
@@ -77,9 +99,16 @@ def create_pawchive_router() -> APIRouter:
                 status_code=code,
                 detail={"code": detail_code, "message": result.message or "post search failed"},
             )
-        return result.data or []
+        published_time = context.configuration.published_time.policy()
+        try:
+            return [post_summary(post, published_time) for post in result.data or ()]
+        except PublishedTimeError as error:
+            raise publication_time_http_error(error) from error
 
-    @router.get("/posts/{service}/{creator_id}/{post_id}", response_model=Post | Revision)
+    @router.get(
+        "/posts/{service}/{creator_id}/{post_id}",
+        response_model=PawchivePostDetailResponse | PawchiveRevisionDetailResponse,
+    )
     async def post_details(
         service: str,
         creator_id: str,
@@ -87,22 +116,40 @@ def create_pawchive_router() -> APIRouter:
         request: Request,
         _: SessionDependency,
         revision_id: str | None = None,
-    ) -> Post | Revision:
-        return await fetch_post(runtime(request), service, creator_id, post_id, revision_id)
+    ) -> PawchivePostDetailResponse | PawchiveRevisionDetailResponse:
+        result = await fetch_post(runtime(request), service, creator_id, post_id, revision_id)
+        context = runtime(request)
+        published_time = context.configuration.published_time.policy()
+        try:
+            return (
+                revision_detail(result, published_time)
+                if isinstance(result, Revision)
+                else post_detail(result, published_time)
+            )
+        except PublishedTimeError as error:
+            raise publication_time_http_error(error) from error
 
-    @router.get("/posts/{service}/{creator_id}/{post_id}/revisions", response_model=list[Revision])
+    @router.get(
+        "/posts/{service}/{creator_id}/{post_id}/revisions",
+        response_model=list[PawchiveRevisionSummaryResponse],
+    )
     async def post_revisions(
         service: str,
         creator_id: str,
         post_id: str,
         request: Request,
         _: SessionDependency,
-    ) -> list[Revision]:
+    ) -> list[PawchiveRevisionSummaryResponse]:
         context = runtime(request)
         try:
             with context.activate():
                 async with create_pawchive_client() as client:
-                    return await client.list_post_revisions(service, creator_id, post_id)
+                    revisions = await client.list_post_revisions(service, creator_id, post_id)
+                    published_time = context.configuration.published_time.policy()
+                    try:
+                        return [revision_summary(revision, published_time) for revision in revisions]
+                    except PublishedTimeError as error:
+                        raise publication_time_http_error(error) from error
         except PawchiveNotFoundError as error:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

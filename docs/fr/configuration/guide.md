@@ -1,5 +1,8 @@
 # Guide de configuration
 
+!!! tip "Modifier les réglages dans la WebUI"
+    Les pages **Configuration globale** et **Format de nommage** sont la méthode la plus simple. Utilisez ce guide pour les fichiers manuels, les variables d'environnement ou l'automatisation du déploiement ; commencez par le [guide WebUI](../webui.md) pour un réglage ordinaire.
+
 KToolBox possède deux niveaux de configuration :
 
 - `.env`, `prod.env` et les variables du processus contrôlent l'API, les transferts et le comportement global des téléchargements.
@@ -24,9 +27,17 @@ KTOOLBOX_JOB__COUNT=4
 KTOOLBOX_JOB__CREATOR_CONCURRENCY=4
 KTOOLBOX_JOB__DOWNLOAD_FILE=True
 KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
+
+# Normalisation de l'heure de publication.
+KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__FALLBACK_SERVICE_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__FANBOX=Asia/Tokyo
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__PATREON=UTC
 ```
 
 Tous les réglages sont facultatifs. Consultez la [référence de configuration](reference.md) pour les valeurs par défaut.
+
+À la création d’un nouveau projet, KToolBox détecte le fuseau IANA de l’hôte et écrit explicitement `KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE` dans `.env` une seule fois. Un projet existant sans cette clé n’est jamais modifié lors du chargement ou du démarrage de la WebUI et conserve la valeur par défaut `UTC`. Le fuseau d’un planning automatique détermine son heure d’exécution ; les fuseaux Service déterminent l’interprétation de `published` dans Pawchive.
 
 ## Générer ou modifier la configuration
 
@@ -43,7 +54,7 @@ pipx install "ktoolbox[urwid]" --force
 ktoolbox config edit
 ```
 
-La [WebUI](../webui.md) facultative présente des libellés et descriptions localisés dans les sept langues prises en charge, ainsi que la source des valeurs finales, le masquage des secrets, la modification directe de dotenv/TOML, la validation, l'aperçu des différences et la protection contre les conflits ETag. Les docstrings anglaises restent la source des champs et de leur sens ; la couverture de chaque chemin est vérifiée dans les autres catalogues.
+La [WebUI](../webui.md) recommandée présente des libellés et descriptions localisés dans les sept langues prises en charge, ainsi que la source des valeurs finales, le masquage des secrets, la modification directe de dotenv/TOML, la validation, l'aperçu des différences et la protection contre les conflits ETag. Les docstrings anglaises restent la source des champs et de leur sens ; la couverture de chaque chemin est vérifiée dans les autres catalogues.
 
 Les choix fixes, comme le niveau de journalisation, utilisent Select ; les champs avec des valeurs conseillées mais acceptant du texte personnalisé utilisent ComboBox. Le sélecteur de chemin est réservé aux vrais fichiers et répertoires ; les noms internes comme `attachments` et `external_links.txt` restent de simples champs texte.
 

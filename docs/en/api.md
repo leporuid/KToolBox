@@ -1,5 +1,8 @@
 # Python API
 
+!!! note
+    This page is for application developers. To download or synchronize without writing code, use the [WebUI](webui.md). For AI clients, use [MCP](mcp.md).
+
 `PawchiveClient` is an instantiated asynchronous client. Reuse one instance for related requests and close it with an asynchronous context manager:
 
 ```python
@@ -71,3 +74,9 @@ All API-specific errors derive from `PawchiveError`:
 Generated models live in `ktoolbox.api.generated` and retain unknown response fields through Pydantic's `extra="allow"`. The client reports their field paths through its `drift_reporter`; pass a custom callback when integrating telemetry.
 
 The untouched source contract is `k_generator/pawchive_openapi.json`. Auditable compatibility corrections are stored in `k_generator/pawchive_openapi.overrides.json`, producing `k_generator/pawchive_openapi.normalized.json` and deterministic generated models.
+
+## Related guides
+
+- Read [About Pawchive](about-pawchive.md) for backend scope and privacy boundaries.
+- Use the [MCP guide](mcp.md) for authenticated tool access through WebUI.
+- See the [command guide](commands/guide.md) for the supported end-user workflows.

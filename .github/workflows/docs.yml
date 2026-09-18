@@ -31,13 +31,16 @@ jobs:
       - name: Setup Python environment
         uses: ./.github/actions/setup-python
         with:
-          poetry-install-arguments: "--with docs --extras webui"
+          uv-sync-arguments: "--group docs --extra webui"
           install-event-loop: "false"
+
+      - name: Check lockfile consistency
+        run: uv lock --check
 
       - name: Build and push
         run: |
           git pull
-          poetry run mike deploy --push --update-aliases master latest
+          uv run --no-sync mike deploy --push --update-aliases master latest
 
       - name: Upload to GitHub Pages
         uses: actions/upload-pages-artifact@v4

@@ -7,9 +7,11 @@ Dans KToolBox v1, le nommage appartient au projet. La CLI et la WebUI lisent la 
 La page **Format de nommage** permet de définir :
 
 - les modèles de dossiers d’auteur, d’œuvre, de révision, d’année et de mois ;
-- les modèles du fichier principal et des pièces jointes ;
+- les modèles du fichier principal (couverture) et des pièces jointes ;
 - les noms internes des pièces jointes, révisions, contenus et liens externes ;
 - le classement annuel ou mensuel, le mélange des œuvres et la numérotation des pièces jointes.
+
+La numérotation séquentielle des pièces jointes est activée par défaut, car Pawchive fournit souvent des noms de stockage illisibles. Désactivez-la uniquement lorsque les noms d’origine sont significatifs et doivent être conservés.
 
 Seules les variables affichées à côté du champ sont acceptées, par exemple `{creator_name}`, `{creator_id}`, `{service}`, `{title}`, `{post_id}`, `{revision_id}`, `{year}` et `{month}`. Les séparateurs de chemin, remontées parent, variables inconnues et noms dangereux sont refusés avant l’analyse.
 
@@ -19,11 +21,25 @@ L’**emplacement de téléchargement par défaut** appartient aussi au projet. 
 
 ![Structure et emplacement par défaut](../assets/webui/37-naming-structure-desktop-light.png)
 
+## Pièces jointes dans le dossier de l’œuvre
+
+Dans **Structure des répertoires**, indiquez `.` ou `./` comme dossier des pièces jointes pour les placer à côté de la couverture et des métadonnées. Cette exception concerne uniquement les pièces jointes ; les chemins du contenu, des liens externes et des révisions doivent toujours porter un nom.
+
+Les fichiers téléchargés avec ce réglage v0 sont pris en charge dans **Conversion des anciens téléchargements > Coller une configuration** :
+
+```dotenv
+KTOOLBOX_JOB__POST_STRUCTURE__ATTACHMENTS=./
+```
+
+Ajoutez les autres réglages de nommage modifiés en v0, car les champs ENV omis utilisent les valeurs par défaut de v0. Le format actuel du projet reste toujours la cible. Vérifiez la prévisualisation avant de confirmer : les pièces jointes identifiées par `post.json` ou l’index de l’auteur sont déplacées individuellement, y compris dans les révisions reconnues. Couvertures et métadonnées ne sont pas traitées comme des pièces jointes ; les fichiers non identifiés conservent leur emplacement relatif dans l’œuvre. Un fichier cible existant ou un chemin dangereux bloque la conversion sans écrasement.
+
 ## Convertir les anciens emplacements
 
 Ouvrez l’onglet séparé **Conversion des anciens téléchargements** uniquement si le contenu existant doit adopter le format enregistré. Ajoutez les anciens emplacements, puis lancez leur analyse. Ces emplacements sont des sources de conversion, pas les destinations des futures tâches.
 
 Le convertisseur reste disponible à tout moment et propose deux modes de source. **Historique du projet** permet de sélectionner plusieurs versions de nommage enregistrées lorsqu’un emplacement contient plusieurs générations d’arborescences. **Coller une configuration** accepte les anciennes clés `.env`, un `ktoolbox.toml` complet, une table `[naming]` ou un fragment sans en-tête. L’éditeur avec coloration fournit des exemples et localise les erreurs par champ ; le texte source reste uniquement en mémoire et n’est écrit ni dans le stockage du navigateur, ni dans les journaux, événements ou historiques. Dans les deux modes, la version actuelle du projet reste la cible en lecture seule et n’est jamais remplacée.
+
+Chaque agencement enregistré fige aussi sa politique d’heure de publication. Les versions antérieures à la correction sont marquées **Valeur Pawchive telle quelle**. Un `.env` v0 collé utilise par défaut **Kemono UTC** ; un TOML permet de choisir Kemono UTC, la valeur Pawchive brute ou des fuseaux Service personnalisés. Par exemple, `2025-12-21T00:35:43` pour Fanbox est interprété en `Asia/Tokyo` et devient `2025-12-20T15:35:43+00:00` pour une cible UTC : un chemin `{published}` passe donc de `2025-12-21` à `2025-12-20`. La valeur Pawchive d’origine reste intacte dans `post.json`.
 
 L’analyse lit directement le système de fichiers, ne dépend pas uniquement de l’historique des tâches et ne contacte pas Pawchive. Elle utilise l’identité des dossiers d’auteur, `creator-indices.ktoolbox` et `post.json`, sans suivre les liens symboliques hors des emplacements choisis.
 
@@ -54,3 +70,9 @@ L’assistant n’apparaît que si KToolBox détecte d’anciennes clés de nomm
 Fermer ou choisir **Ignorer** ne masque que cette occurrence. Tant que les anciennes clés existent, l’assistant réapparaît après actualisation ou reconnexion. Migration de configuration et conversion de répertoires sont distinctes : vérifiez les anciens emplacements puis lancez explicitement leur analyse. Ouvrir l’outil ne déclenche ni analyse ni déplacement.
 
 La CLI utilise également le nommage du projet. Pour un ancien projet, confirmez dans la WebUI la migration atomique avec sauvegarde. Les anciennes valeurs présentes uniquement dans l’environnement du processus ne peuvent pas être supprimées : elles sont ignorées pour le nommage et restent signalées jusqu’à leur retrait de l’environnement de lancement.
+
+## Guides associés
+
+- Consultez le [guide WebUI](webui.md) pour la page de nommage et le processus de conversion.
+- Utilisez le [guide de configuration](configuration/guide.md) pour les réglages globaux du réseau et du téléchargeur.
+- Suivez le [guide de migration v1](migration-v1.md) lors de la mise à niveau d'un projet existant.

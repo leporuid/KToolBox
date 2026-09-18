@@ -1,22 +1,34 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { TaskRecord, TaskSpec } from "../types";
+import { queryClient } from "../lib/query";
+import type { CreatorRosterItem, TaskRecord, TaskSpec } from "../types";
 import { TaskEditor } from "./TaskEditor";
 
 const noopSave: (spec: TaskSpec) => Promise<void> = async () => undefined;
 
-function renderEditor({ task, onSave = vi.fn(noopSave) }: { task?: TaskRecord; onSave?: (spec: TaskSpec) => Promise<void> } = {}) {
+function renderEditor({
+  creators = [],
+  task,
+  onSave = vi.fn(noopSave),
+}: {
+  creators?: CreatorRosterItem[];
+  task?: TaskRecord;
+  onSave?: (spec: TaskSpec) => Promise<void>;
+} = {}) {
   render(
-    <TaskEditor
-      creators={[]}
-      defaultOutput="/project/downloads"
-      saving={false}
-      task={task}
-      onClose={() => undefined}
-      onSave={onSave}
-    />,
+    <QueryClientProvider client={queryClient}>
+      <TaskEditor
+        creators={creators}
+        defaultOutput="/project/downloads"
+        saving={false}
+        task={task}
+        onClose={() => undefined}
+        onSave={onSave}
+      />
+    </QueryClientProvider>,
   );
   return onSave;
 }
@@ -33,6 +45,7 @@ describe("TaskEditor", () => {
     expect(screen.getByText(/Synchronize every post from the selected creators/)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "No start date" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "No end date" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: "Download primary file (cover)" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: /^Increase Post offset/ }));
     expect(screen.getByRole("textbox", { name: "Post offset" })).toHaveValue("50");
 
@@ -47,6 +60,7 @@ describe("TaskEditor", () => {
       keywords: ["painting"],
       keywords_exclude: ["daily"],
       output: "/project/downloads",
+      download_file: true,
     }));
   });
 
@@ -64,6 +78,41 @@ describe("TaskEditor", () => {
 
     expect(onSave).not.toHaveBeenCalled();
     expect(await screen.findByText("Choose a start date or select No start date.")).toBeInTheDocument();
+  });
+
+  it("submits selected project creators when full-roster sync is disabled", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn(noopSave);
+    renderEditor({
+      creators: [
+        {
+          service: "patreon",
+          creator_id: "creator-42",
+          alias: "Guest studio",
+          enabled: true,
+          name: "Guest Studio",
+        },
+      ],
+      onSave,
+    });
+
+    await user.click(screen.getByRole("switch", { name: "All enabled creators" }));
+    await user.click(screen.getByRole("checkbox", { name: /Guest Studio/ }));
+
+    await user.click(screen.getByRole("button", { name: "Create task" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "sync",
+        creators: [
+          {
+            service: "patreon",
+            creator_id: "creator-42",
+            alias: "Guest studio",
+            enabled: true,
+          },
+        ],
+      }),
+    );
   });
 
   it("submits the composed Pawchive path without changing the REST task shape", async () => {
@@ -87,6 +136,7 @@ describe("TaskEditor", () => {
     await user.type(screen.getByRole("textbox", { name: "Creator ID" }), "42");
     await user.type(screen.getByRole("textbox", { name: "Post ID" }), "99");
     await user.type(screen.getByRole("textbox", { name: "Revision ID" }), "3");
+    await user.click(screen.getByRole("switch", { name: "Download primary file (cover)" }));
     await user.click(screen.getByRole("button", { name: "Create task" }));
 
     expect(onSave).toHaveBeenCalledWith({
@@ -98,19 +148,22 @@ describe("TaskEditor", () => {
       revision_id: "3",
       output: "/project/downloads",
       dump_post_data: true,
+      download_file: false,
     });
   });
 
   it("defaults new downloads to URL parsing while preserving manual fields for existing tasks", async () => {
     const user = userEvent.setup();
     const { unmount } = render(
-      <TaskEditor
-        creators={[]}
-        defaultOutput="/project/downloads"
-        saving={false}
-        onClose={() => undefined}
-        onSave={noopSave}
-      />,
+      <QueryClientProvider client={queryClient}>
+        <TaskEditor
+          creators={[]}
+          defaultOutput="/project/downloads"
+          saving={false}
+          onClose={() => undefined}
+          onSave={noopSave}
+        />
+      </QueryClientProvider>,
     );
 
     await user.click(screen.getByRole("tab", { name: "Download post" }));

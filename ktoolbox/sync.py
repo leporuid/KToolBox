@@ -23,6 +23,7 @@ from ktoolbox.project_config import (
     ProjectNamingConfiguration,
     parse_creator_reference,
 )
+from ktoolbox.publication_time import PublishedTimePolicy
 from ktoolbox.reporting import NullProgressReporter, ProgressReporter
 
 
@@ -31,6 +32,7 @@ class SyncOptions:
     output: Path = Path(".")
     save_creator_indices: bool = False
     mix_posts: bool | None = None
+    download_file: bool | None = None
     start_time: datetime | None = None
     end_time: datetime | None = None
     offset: int = 0
@@ -89,6 +91,7 @@ class SyncCoordinator:
         client: PawchiveClient,
         *,
         naming: ProjectNamingConfiguration | None = None,
+        published_time: PublishedTimePolicy | None = None,
         blocker_engine: BlockerEngine | None = None,
         creator_concurrency: int = 4,
         download_pool: DownloadWorkerPool | None = None,
@@ -99,6 +102,7 @@ class SyncCoordinator:
             raise ValueError("creator concurrency must be positive")
         self.client = client
         self.naming = naming or ProjectNamingConfiguration()
+        self.published_time = published_time or config.published_time.policy()
         self.blocker_engine = blocker_engine or BlockerEngine()
         self.creator_concurrency = creator_concurrency
         self.reporter = reporter or NullProgressReporter()
@@ -174,11 +178,13 @@ class SyncCoordinator:
                     creator_path,
                     enqueue,
                     naming=self.naming,
+                    published_time=self.published_time,
                     all_pages=options.length is None,
                     offset=options.offset,
                     length=options.length,
                     save_creator_indices=options.save_creator_indices,
                     mix_posts=options.mix_posts,
+                    download_file=options.download_file,
                     start_time=options.start_time,
                     end_time=options.end_time,
                     keywords=options.keywords,
@@ -222,5 +228,11 @@ class SyncCoordinator:
             result.error = result.failure.message
         finally:
             await queue.close(creator.key)
-            self.reporter.creator_finished(creator.key, result.error, result.failure)
+            self.reporter.creator_finished(
+                creator.key,
+                result.error,
+                result.failure,
+                fetched_posts=result.generation.fetched_posts if result.generation is not None else None,
+                accepted_posts=result.generation.accepted_posts if result.generation is not None else None,
+            )
         return result

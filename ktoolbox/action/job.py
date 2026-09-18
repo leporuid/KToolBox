@@ -31,6 +31,7 @@ from ktoolbox.configuration import config
 from ktoolbox.failures import FailureStage, StagedFailure
 from ktoolbox.job import CreatorIndices, Job
 from ktoolbox.project_config import ProjectNamingConfiguration
+from ktoolbox.publication_time import PublishedTimePolicy
 from ktoolbox.utils import extract_external_links, generate_msg
 
 __all__ = ["CreatorJobGeneration", "create_job_from_post", "create_job_from_creator", "produce_jobs_from_creator"]
@@ -41,8 +42,10 @@ async def create_job_from_post(
     post_path: Path,
     *,
     naming: ProjectNamingConfiguration | None = None,
+    published_time: PublishedTimePolicy | None = None,
     post_dir: bool = True,
     dump_post_data: bool = True,
+    download_file: bool | None = None,
     client: PawchiveClient | None = None,
 ) -> list[Job]:
     """
@@ -52,9 +55,11 @@ async def create_job_from_post(
     :param post_path: Path of the post directory, which needs to be sanitized
     :param post_dir: Whether to create post directory
     :param dump_post_data: Whether to dump post data (post.json) in post directory
+    :param download_file: Whether to download the primary file (usually the cover); inherit global settings if omitted
     :raise FetchInterruptError: If fetching post content fails
     """
     naming = naming or ProjectNamingConfiguration()
+    published_time = published_time or config.published_time.policy()
     await aiofiles.os.makedirs(post_path, exist_ok=True)
     job_post = Post.model_validate(post.model_dump(mode="python"))
 
@@ -100,7 +105,7 @@ async def create_job_from_post(
                     sequential_counter += 1
                 else:
                     basic_filename = file_path_obj.name
-                alt_filename = generate_filename(post, basic_filename, naming.filename_format)
+                alt_filename = generate_filename(post, basic_filename, naming.filename_format, published_time)
                 jobs.append(
                     Job(
                         path=attachments_path,
@@ -112,13 +117,16 @@ async def create_job_from_post(
                 )
 
     # Filter and create jobs for ``Post.file``
-    if config.job.download_file and post.file and post.file.path:
+    selected_download_file = config.job.download_file if download_file is None else download_file
+    if selected_download_file and post.file and post.file.path:
         post_file_name = (
             Path(post.file.name)
             if post.file.name and is_valid_filename(post.file.name)
             else Path(urlparse(post.file.path).path)
         )
-        post_file_name = Path(generate_filename(post, post_file_name.name, naming.post_structure.file))
+        post_file_name = Path(
+            generate_filename(post, post_file_name.name, naming.post_structure.file, published_time)
+        )
         if (
             not config.job.allow_list or any(map(lambda x: fnmatch(post_file_name.name, x), config.job.allow_list))
         ) and not any(map(lambda x: fnmatch(post_file_name.name, x), config.job.block_list)):
@@ -211,7 +219,7 @@ async def create_job_from_post(
                     else:
                         basic_filename = image_file_path.name
 
-                    alt_filename = generate_filename(post, basic_filename, naming.filename_format)
+                    alt_filename = generate_filename(post, basic_filename, naming.filename_format, published_time)
 
                     if (
                         not config.job.allow_list or any(map(lambda x: fnmatch(alt_filename, x), config.job.allow_list))
@@ -223,7 +231,7 @@ async def create_job_from_post(
                         )
                         if should_use_sequential:
                             basic_filename = f"{sequential_counter}{image_file_path.suffix}"
-                            alt_filename = generate_filename(post, basic_filename, naming.filename_format)
+                            alt_filename = generate_filename(post, basic_filename, naming.filename_format, published_time)
                             sequential_counter += 1
 
                         jobs.append(
@@ -257,11 +265,13 @@ async def create_job_from_creator(
     path: Path,
     *,
     naming: ProjectNamingConfiguration | None = None,
+    published_time: PublishedTimePolicy | None = None,
     all_pages: bool = False,
     offset: int = 0,
     length: int | None = 50,
     save_creator_indices: bool = False,
     mix_posts: bool | None = None,
+    download_file: bool | None = None,
     start_time: datetime | None,
     end_time: datetime | None,
     keywords: set[str] | None = None,
@@ -282,6 +292,7 @@ async def create_job_from_creator(
     :param save_creator_indices: Record ``CreatorIndices`` data.
     :param mix_posts: Save all files from different posts at same path, \
      ``save_creator_indices`` will be ignored if enabled
+    :param download_file: Whether to download each post's primary file (usually the cover)
     :param start_time: Start time of the time range
     :param end_time: End time of the time range
     :param keywords: Set of keywords to filter posts by title (case-insensitive)
@@ -291,6 +302,7 @@ async def create_job_from_creator(
     :param client: Pawchive client to reuse across all creator requests
     """
     naming = naming or ProjectNamingConfiguration()
+    published_time = published_time or config.published_time.policy()
     job_list: list[Job] = []
 
     async def collect(job: Job) -> None:
@@ -302,11 +314,13 @@ async def create_job_from_creator(
         path,
         collect,
         naming=naming,
+        published_time=published_time,
         all_pages=all_pages,
         offset=offset,
         length=length,
         save_creator_indices=save_creator_indices,
         mix_posts=mix_posts,
+        download_file=download_file,
         start_time=start_time,
         end_time=end_time,
         keywords=keywords,
@@ -327,11 +341,13 @@ async def produce_jobs_from_creator(
     sink: JobSink,
     *,
     naming: ProjectNamingConfiguration | None = None,
+    published_time: PublishedTimePolicy | None = None,
     all_pages: bool = False,
     offset: int = 0,
     length: int | None = 50,
     save_creator_indices: bool = False,
     mix_posts: bool | None = None,
+    download_file: bool | None = None,
     start_time: datetime | None,
     end_time: datetime | None,
     keywords: set[str] | None = None,
@@ -342,6 +358,7 @@ async def produce_jobs_from_creator(
 ) -> ActionRet[CreatorJobGeneration]:
     """Generate and emit creator jobs as soon as each post has been processed."""
     naming = naming or ProjectNamingConfiguration()
+    published_time = published_time or config.published_time.policy()
     if client is None:
         async with pawchive_client_scope(None) as api_client:
             return await produce_jobs_from_creator(
@@ -350,11 +367,13 @@ async def produce_jobs_from_creator(
                 path,
                 sink,
                 naming=naming,
+                published_time=published_time,
                 all_pages=all_pages,
                 offset=offset,
                 length=length,
                 save_creator_indices=save_creator_indices,
                 mix_posts=mix_posts,
+                download_file=download_file,
                 start_time=start_time,
                 end_time=end_time,
                 keywords=keywords,
@@ -400,7 +419,7 @@ async def produce_jobs_from_creator(
                     break
                 consumed += 1
                 summary.fetched_posts += 1
-                if not _post_matches_filters(post, start_time, end_time, keywords):
+                if not _post_matches_filters(post, start_time, end_time, keywords, published_time):
                     continue
                 if post_filter is not None and not post_filter(post):
                     continue
@@ -410,21 +429,25 @@ async def produce_jobs_from_creator(
 
                 summary.accepted_posts += 1
                 summary.accepted_post_ids.append(post.id)
-                post_path = _creator_post_path(post, path, selected_mix_posts, naming)
+                post_path = _creator_post_path(post, path, selected_mix_posts, naming, published_time)
                 if not selected_mix_posts and save_creator_indices:
                     indexed_posts[post.id] = post
-                    indexed_paths[post.id] = generate_grouped_post_path(post, path, naming) / generate_post_path_name(
+                    indexed_paths[post.id] = generate_grouped_post_path(
                         post,
+                        path,
                         naming,
-                    )
+                        published_time,
+                    ) / generate_post_path_name(post, naming, published_time)
 
                 try:
                     jobs = await create_job_from_post(
                         post=post,
                         post_path=post_path,
                         naming=naming,
+                        published_time=published_time,
                         post_dir=not selected_mix_posts,
                         dump_post_data=not selected_mix_posts,
+                        download_file=download_file,
                         client=client,
                     )
                 except FetchInterruptError as error:
@@ -442,6 +465,8 @@ async def produce_jobs_from_creator(
                             sink,
                             summary,
                             naming,
+                            published_time,
+                            download_file,
                         )
                     except FetchInterruptError as error:
                         return action_error(error.error)
@@ -480,8 +505,11 @@ def _post_matches_filters(
     start_time: datetime | None,
     end_time: datetime | None,
     keywords: set[str] | None,
+    published_time: PublishedTimePolicy,
 ) -> bool:
-    if (start_time or end_time) and not list(filter_posts_by_date([post], start_time, end_time)):
+    if (start_time or end_time) and not list(
+        filter_posts_by_date([post], start_time, end_time, published_time)
+    ):
         return False
     return not keywords or bool(list(filter_posts_by_keywords([post], keywords)))
 
@@ -491,10 +519,15 @@ def _creator_post_path(
     path: Path,
     mix_posts: bool,
     naming: ProjectNamingConfiguration,
+    published_time: PublishedTimePolicy,
 ) -> Path:
     if mix_posts:
         return path
-    return generate_grouped_post_path(post, path, naming) / generate_post_path_name(post, naming)
+    return generate_grouped_post_path(post, path, naming, published_time) / generate_post_path_name(
+        post,
+        naming,
+        published_time,
+    )
 
 
 async def _emit_jobs(jobs: list[Job], sink: JobSink, summary: CreatorJobGeneration) -> None:
@@ -512,16 +545,24 @@ async def _emit_revision_jobs(
     sink: JobSink,
     summary: CreatorJobGeneration,
     naming: ProjectNamingConfiguration,
+    published_time: PublishedTimePolicy,
+    download_file: bool | None,
 ) -> None:
     try:
         revisions = await client.list_post_revisions(service, creator_id, post.id)
         for revision in revisions:
-            revision_path = post_path / naming.post_structure.revisions / generate_revision_path_name(revision, naming)
+            revision_path = post_path / naming.post_structure.revisions / generate_revision_path_name(
+                revision,
+                naming,
+                published_time,
+            )
             revision_jobs = await create_job_from_post(
                 post=revision,
                 post_path=revision_path,
                 naming=naming,
+                published_time=published_time,
                 dump_post_data=True,
+                download_file=download_file,
                 client=client,
             )
             await _emit_jobs(revision_jobs, sink, summary)

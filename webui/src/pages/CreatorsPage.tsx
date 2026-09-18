@@ -9,18 +9,16 @@ import {
 import type { SortDescriptor } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  IconCheck as Check,
   IconCircleCheck as CircleCheck,
   IconCloud as Cloud,
   IconFilter as Filter,
   IconFingerprint as Fingerprint,
-  IconLink as Link,
   IconPencil as Pencil,
   IconPlus as Plus,
-  IconPower as Power,
   IconCircleOff as PowerOff,
   IconSearch as Search,
   IconNotes as Notes,
+  IconPhoto as Photo,
   IconRefresh as Sync,
   IconTool as Tools,
   IconTrash as Trash2,
@@ -30,24 +28,20 @@ import {
   IconX as X,
 } from "@tabler/icons-react";
 import { useMemo, useState, type FormEvent } from "react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
+import { CreatorEditorModal, type CreatorEditorRequest } from "../components/CreatorEditorModal";
+import { CreatorAvatar, CreatorBanner } from "../components/SensitiveMedia";
 import {
-  AddressText,
   BatchActionBar,
   CompactSwitch,
   ConfirmModal,
   DataTableFrame,
   EmptyPanel,
-  FormField,
-  FormModal,
-  FormSwitchField,
   FormSurface,
   IconButton,
-  InlineCode,
   MobileSortControls,
-  PawchiveIdentityFields,
   PageHeader,
   PageLoading,
   PlatformLabel,
@@ -56,29 +50,18 @@ import {
   SortableColumn,
   TableColumnLabel,
 } from "../components/ui";
-import { ExternalChangeAlert } from "../components/ExternalChangeAlert";
 import { api, errorText } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { parsePawchiveCreatorUrl } from "../lib/pawchive";
-import { useRealtime } from "../lib/realtime";
+import { useSensitiveMediaEnabled } from "../lib/sensitiveMedia";
 import { stableSort } from "../lib/sorting";
 import type { CreatorReference, CreatorRosterItem, CreatorSummary } from "../types";
 
-const blankCreator: CreatorReference = {
-  service: "fanbox",
-  creator_id: "",
-  alias: null,
-  enabled: true,
-};
-
 type CreatorStatusFilter = "all" | "enabled" | "disabled";
-type CreatorIdentityMode = "url" | "fields";
 
 export function CreatorsPage() {
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
-  const realtime = useRealtime(false);
-  const creatorRevision = realtime?.revisions.creators ?? 0;
+  const sensitiveMediaEnabled = useSensitiveMediaEnabled();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const roster = useQuery({ queryKey: ["creators"], queryFn: () => api<CreatorRosterItem[]>("/creators") });
@@ -86,20 +69,11 @@ export function CreatorsPage() {
     column: "name",
     direction: "ascending",
   });
-  const [editor, setEditor] = useState<CreatorReference | null>(null);
-  const [editorOriginal, setEditorOriginal] = useState<CreatorReference | null>(null);
-  const [editorRevisionBaseline, setEditorRevisionBaseline] = useState(
-    creatorRevision,
-  );
-  const [creatorIdentityMode, setCreatorIdentityMode] = useState<CreatorIdentityMode>("url");
-  const [creatorUrl, setCreatorUrl] = useState("");
-  const [creatorUrlError, setCreatorUrlError] = useState<string>();
-  const [originalKey, setOriginalKey] = useState<string | null>(null);
+  const [editorRequest, setEditorRequest] = useState<CreatorEditorRequest | null>(null);
   const [removing, setRemoving] = useState<CreatorReference[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [batchBusy, setBatchBusy] = useState<"enable" | "disable" | null>(null);
-  const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<CreatorSummary[]>([]);
@@ -131,73 +105,11 @@ export function CreatorsPage() {
   const disableCandidates = selectedCreators.filter((creator) => creator.enabled);
 
   function openNew(prefill?: CreatorSummary) {
-    setOriginalKey(null);
-    setCreatorIdentityMode(prefill ? "fields" : "url");
-    setCreatorUrl("");
-    setCreatorUrlError(undefined);
-    const value = prefill
-      ? {
-          service: prefill.service,
-          creator_id: prefill.id,
-          alias: null,
-          enabled: true,
-        }
-      : { ...blankCreator };
-    setEditor(value);
-    setEditorOriginal(value);
-    setEditorRevisionBaseline(creatorRevision);
+    setEditorRequest({ kind: "create", prefill });
   }
 
   function openEdit(creator: CreatorReference) {
-    setOriginalKey(`${creator.service}/${creator.creator_id}`);
-    setCreatorIdentityMode("fields");
-    setCreatorUrl("");
-    setCreatorUrlError(undefined);
-    setEditor({ ...creator });
-    setEditorOriginal({ ...creator });
-    setEditorRevisionBaseline(creatorRevision);
-  }
-
-  async function saveCreator(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!editor || !session) return;
-    let creator = editor;
-    if (!originalKey && creatorIdentityMode === "url") {
-      const identity = parsePawchiveCreatorUrl(creatorUrl);
-      if (!identity) {
-        setCreatorUrlError(t("creators.creatorUrlInvalid"));
-        return;
-      }
-      creator = {
-        ...editor,
-        service: identity.service,
-        creator_id: identity.creatorId,
-      };
-    }
-    setSaving(true);
-    try {
-      if (originalKey) {
-        await api<CreatorReference>(`/creators/${originalKey}`, {
-          method: "PUT",
-          body: { alias: creator.alias || null, enabled: creator.enabled },
-          csrfToken: session.csrf_token,
-        });
-        toast.success(t("creators.updated"));
-      } else {
-        await api<CreatorReference>("/creators", {
-          method: "POST",
-          body: creator,
-          csrfToken: session.csrf_token,
-        });
-        toast.success(t("creators.added"));
-      }
-      setEditor(null);
-      await queryClient.invalidateQueries({ queryKey: ["creators"] });
-    } catch (error) {
-      toast.danger(t("common.error"), { description: errorText(error) });
-    } finally {
-      setSaving(false);
-    }
+    setEditorRequest({ kind: "edit", creator });
   }
 
   async function updateCreatorState(creator: CreatorReference, enabled: boolean) {
@@ -387,12 +299,26 @@ export function CreatorsPage() {
         {results.length ? (
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {results.map((creator) => (
-              <Surface className="flex min-w-0 items-center gap-3 rounded-lg border border-border p-3" key={`${creator.service}:${creator.id}`}>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{creator.name || creator.id}</p>
-                  <p className="truncate text-xs text-muted">{creator.service}:{creator.id}</p>
+              <Surface
+                className={sensitiveMediaEnabled
+                  ? "creator-search-media-card min-w-0 overflow-hidden rounded-lg border border-border"
+                  : "flex min-w-0 items-center gap-3 rounded-lg border border-border p-3"}
+                key={`${creator.service}:${creator.id}`}
+              >
+                <CreatorBanner asset={creator.banner} name={creator.name || creator.id} />
+                <div className={sensitiveMediaEnabled ? "flex min-w-0 items-center gap-3 px-3 pb-3" : "flex min-w-0 flex-1 items-center gap-3"}>
+                  <CreatorAvatar
+                    asset={creator.avatar}
+                    className="creator-search-avatar"
+                    name={creator.name || creator.id}
+                    size="md"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{creator.name || creator.id}</p>
+                    <p className="truncate text-xs text-muted">{creator.service}:{creator.id}</p>
+                  </div>
+                  <IconButton icon={UserPlus} label={t("creators.add")} onPress={() => openNew(creator)} />
                 </div>
-                <IconButton icon={UserPlus} label={t("creators.add")} onPress={() => openNew(creator)} />
               </Surface>
             ))}
           </div>
@@ -413,7 +339,7 @@ export function CreatorsPage() {
             onChange={changeStatusFilter}
           />
           <MobileSortControls
-            className="lg:hidden"
+            className="xl:hidden"
             descriptor={sortDescriptor}
             options={sortOptions}
             onChange={(descriptor) => descriptor && setSortDescriptor(descriptor)}
@@ -463,7 +389,7 @@ export function CreatorsPage() {
           <EmptyPanel title={t("creators.empty")} />
         ) : (
           <>
-            <DataTableFrame className="hidden lg:block">
+            <DataTableFrame className="hidden xl:block">
               <Table.Content
                 aria-label={t("creators.roster")}
                 sortDescriptor={sortDescriptor}
@@ -478,6 +404,11 @@ export function CreatorsPage() {
                           onChange={selectAllVisible}
                         />
                       </Table.Column>
+                      {sensitiveMediaEnabled ? (
+                        <Table.Column aria-label={t("sensitiveMedia.label")} className="w-14 text-center">
+                          <Photo aria-hidden="true" className="mx-auto text-accent" size={16} />
+                        </Table.Column>
+                      ) : null}
                       <SortableColumn icon={User} id="name" isRowHeader>{t("creators.creatorName")}</SortableColumn>
                       <SortableColumn icon={Fingerprint} id="creator_id">{t("creators.creatorId")}</SortableColumn>
                       <SortableColumn icon={Cloud} id="service">{t("creators.service")}</SortableColumn>
@@ -495,8 +426,16 @@ export function CreatorsPage() {
                               onChange={(selected) => setCreatorSelected(creator, selected)}
                             />
                           </Table.Cell>
+                          {sensitiveMediaEnabled ? (
+                            <Table.Cell className="w-14">
+                              <CreatorAvatar asset={creator.avatar} name={creator.name || creator.creator_id} size="sm" />
+                            </Table.Cell>
+                          ) : null}
                           <Table.Cell className="font-medium">
-                            <span className="data-cell-label"><User aria-hidden="true" className="data-cell-icon" size={16} />{creator.name || creator.creator_id}</span>
+                            <span className="data-cell-label">
+                              {!sensitiveMediaEnabled ? <User aria-hidden="true" className="data-cell-icon" size={16} /> : null}
+                              {creator.name || creator.creator_id}
+                            </span>
                           </Table.Cell>
                           <Table.Cell className="font-medium">
                             <span className="data-cell-label"><Fingerprint aria-hidden="true" className="data-cell-icon" size={15} /><code className="text-xs">{creator.creator_id}</code></span>
@@ -523,7 +462,7 @@ export function CreatorsPage() {
                     </Table.Body>
               </Table.Content>
             </DataTableFrame>
-            <div className="grid gap-3 lg:hidden">
+            <div className="grid gap-3 md:grid-cols-2 xl:hidden">
               {creators.map((creator) => (
                 <Surface className={`data-mobile-card rounded-lg border border-border p-4${selectedKeys.has(creatorKey(creator)) ? " is-selected" : ""}`} key={creatorKey(creator)}>
                   <div className="flex items-start justify-between gap-3">
@@ -533,8 +472,12 @@ export function CreatorsPage() {
                       label={t("creators.selectCreator", { name: creator.name || creator.creator_id })}
                       onChange={(selected) => setCreatorSelected(creator, selected)}
                     />
+                    <CreatorAvatar asset={creator.avatar} name={creator.name || creator.creator_id} size="md" />
                     <div className="min-w-0 flex-1">
-                      <p className="data-cell-label break-words font-medium"><User aria-hidden="true" className="data-cell-icon" size={16} /><span>{creator.name || creator.creator_id}</span></p>
+                      <p className="data-cell-label break-words font-medium">
+                        {!sensitiveMediaEnabled ? <User aria-hidden="true" className="data-cell-icon" size={16} /> : null}
+                        <span>{creator.name || creator.creator_id}</span>
+                      </p>
                       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted">
                         <PlatformLabel platform={creator.service} />
                         <span className="data-cell-label"><Fingerprint aria-hidden="true" className="data-cell-icon" size={14} /><code className="break-all">{creator.creator_id}</code></span>
@@ -566,102 +509,12 @@ export function CreatorsPage() {
         )}
       </section>
 
-      <FormModal
-        actions={
-          <>
-            <Button variant="ghost" onPress={() => setEditor(null)}><X aria-hidden="true" size={17} />{t("common.cancel")}</Button>
-            <Button form="creator-form" isPending={saving} type="submit" variant="primary"><Check aria-hidden="true" size={17} />{t("common.save")}</Button>
-          </>
-        }
-        open={editor !== null}
-        title={originalKey ? t("creators.edit") : t("creators.add")}
-        onOpenChange={(open) => !open && setEditor(null)}
-      >
-        {editor ? (
-          <form className="grid gap-5" id="creator-form" onSubmit={saveCreator}>
-            <ExternalChangeAlert
-              visible={Boolean(
-                originalKey &&
-                  editorOriginal &&
-                  JSON.stringify(editor) !== JSON.stringify(editorOriginal) &&
-                  creatorRevision > editorRevisionBaseline,
-              )}
-              onKeepEditing={() =>
-                setEditorRevisionBaseline(creatorRevision)
-              }
-              onReload={() => setEditor(null)}
-            />
-            {!originalKey ? (
-              <SelectField
-                description={t("creators.identityModeHint")}
-                icon={Fingerprint}
-                label={t("creators.identityMode")}
-                options={[
-                  { value: "url", label: t("creators.identityUrl"), icon: Link },
-                  { value: "fields", label: t("creators.identityFields"), icon: Fingerprint },
-                ]}
-                value={creatorIdentityMode}
-                onChange={(value) => {
-                  setCreatorUrlError(undefined);
-                  setCreatorIdentityMode(value === "fields" ? "fields" : "url");
-                }}
-              />
-            ) : null}
-            {!originalKey && creatorIdentityMode === "url" ? (
-              <FormField
-                description={<AddressText text={t("creators.creatorUrlHint")} />}
-                errorMessage={creatorUrlError}
-                icon={Link}
-                inputClassName="font-mono text-[0.8125rem]"
-                isInvalid={Boolean(creatorUrlError)}
-                isRequired
-                label={t("creators.creatorUrl")}
-                value={creatorUrl}
-                onChange={(value) => {
-                  setCreatorUrl(value);
-                  setCreatorUrlError(undefined);
-                }}
-              />
-            ) : (
-              <PawchiveIdentityFields
-                creatorId={editor.creator_id}
-                creatorIdLabel={t("creators.creatorId")}
-                description={
-                  originalKey ? (
-                    t("creators.identityLockedHint")
-                  ) : (
-                    <Trans
-                      components={{ code: <InlineCode /> }}
-                      i18nKey="creators.identityHint"
-                    />
-                  )
-                }
-                icon={Cloud}
-                isReadOnly={Boolean(originalKey)}
-                label={t("creators.identity")}
-                service={editor.service}
-                serviceLabel={t("creators.service")}
-                onCreatorIdChange={(creator_id) => setEditor({ ...editor, creator_id })}
-                onServiceChange={(service) => setEditor({ ...editor, service })}
-              />
-            )}
-            <FormField
-              description={t("creators.aliasHint")}
-              icon={Notes}
-              label={t("creators.alias")}
-              value={editor.alias ?? ""}
-              onChange={(alias) => setEditor({ ...editor, alias: alias || null })}
-            />
-            <FormSwitchField
-              description={t("creators.enabledHint")}
-              icon={Power}
-              isSelected={editor.enabled}
-              label={t("creators.enabled")}
-              onChange={(enabled) => setEditor({ ...editor, enabled })}
-            />
-          </form>
-        ) : null}
-      </FormModal>
+      {editorRequest ? (
+        <CreatorEditorModal
+          request={editorRequest}
+          onClose={() => setEditorRequest(null)}
+        />
+      ) : null}
 
       <ConfirmModal
         actions={

@@ -3,7 +3,7 @@ info:
   title: KToolBox WebUI API
   description: Authenticated REST API for the KToolBox WebUI. Selected operations also define the curated MCP tool surface
     through x-ktoolbox-mcp metadata.
-  version: 1.0.0
+  version: 1.1.0-beta.1
   license:
     name: BSD-3-Clause
     identifier: BSD-3-Clause
@@ -815,7 +815,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CreatorSummary'
+                  $ref: '#/components/schemas/CreatorSearchItemResponse'
                 title: Response Creators
         '422':
           description: Validation Error
@@ -887,7 +887,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Post'
+                  $ref: '#/components/schemas/PawchivePostSummaryResponse'
                 title: Response Posts
         '422':
           description: Validation Error
@@ -944,8 +944,8 @@ paths:
             application/json:
               schema:
                 anyOf:
-                - $ref: '#/components/schemas/Post'
-                - $ref: '#/components/schemas/Revision'
+                - $ref: '#/components/schemas/PawchivePostDetailResponse'
+                - $ref: '#/components/schemas/PawchiveRevisionDetailResponse'
                 title: Response Post Details
         '422':
           description: Validation Error
@@ -995,7 +995,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Revision'
+                  $ref: '#/components/schemas/PawchiveRevisionSummaryResponse'
                 title: Response Post Revisions
         '422':
           description: Validation Error
@@ -1036,6 +1036,156 @@ paths:
         scope: mcp:read
         safety: read
         openWorld: true
+  /api/v1/media/creators/{platform}/{creator_id}/avatar:
+    get:
+      summary: Load a creator avatar
+      operationId: creator_avatar
+      parameters:
+      - name: platform
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Platform
+      - name: creator_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Creator Id
+      - name: variant
+        in: query
+        required: true
+        schema:
+          enum:
+          - thumbnail
+          - preview
+          - original
+          type: string
+          title: Variant
+      responses:
+        '200':
+          description: Validated image bytes.
+          content:
+            image/webp: {}
+            image/jpeg: {}
+            image/png: {}
+            image/gif: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      description: Return a validated same-origin creator avatar for an authenticated WebUI session.
+      tags:
+      - media
+      security:
+      - WebUISession: []
+      x-ktoolbox-mcp:
+        enabled: false
+        name: creator_avatar
+        scope: null
+        safety: null
+        openWorld: false
+  /api/v1/media/creators/{platform}/{creator_id}/banner:
+    get:
+      summary: Load a creator banner
+      operationId: creator_banner
+      parameters:
+      - name: platform
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Platform
+      - name: creator_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Creator Id
+      - name: variant
+        in: query
+        required: true
+        schema:
+          enum:
+          - thumbnail
+          - preview
+          - original
+          type: string
+          title: Variant
+      responses:
+        '200':
+          description: Validated image bytes.
+          content:
+            image/webp: {}
+            image/jpeg: {}
+            image/png: {}
+            image/gif: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      description: Return a validated same-origin creator banner for an authenticated WebUI session.
+      tags:
+      - media
+      security:
+      - WebUISession: []
+      x-ktoolbox-mcp:
+        enabled: false
+        name: creator_banner
+        scope: null
+        safety: null
+        openWorld: false
+  /api/v1/media/files:
+    get:
+      summary: Load a Pawchive image
+      operationId: media_file
+      parameters:
+      - name: path
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Path
+      - name: variant
+        in: query
+        required: true
+        schema:
+          enum:
+          - thumbnail
+          - preview
+          - original
+          type: string
+          title: Variant
+      responses:
+        '200':
+          description: Validated image bytes.
+          content:
+            image/webp: {}
+            image/jpeg: {}
+            image/png: {}
+            image/gif: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      description: Return a validated thumbnail, preview, or original image from the configured Pawchive file host.
+      tags:
+      - media
+      security:
+      - WebUISession: []
+      x-ktoolbox-mcp:
+        enabled: false
+        name: media_file
+        scope: null
+        safety: null
+        openWorld: false
   /api/v1/tasks:
     get:
       tags:
@@ -3082,8 +3232,8 @@ paths:
             application/json:
               schema:
                 anyOf:
-                - $ref: '#/components/schemas/Post'
-                - $ref: '#/components/schemas/Revision'
+                - $ref: '#/components/schemas/MCPPostResponse'
+                - $ref: '#/components/schemas/MCPRevisionResponse'
                 title: Response Get Mcp Work
         '422':
           description: Validation Error
@@ -3356,6 +3506,11 @@ components:
           - type: boolean
           - type: 'null'
           title: Mix Posts
+        download_file:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Download File
         keywords:
           items:
             type: string
@@ -3717,6 +3872,12 @@ components:
             - suggested
           - type: 'null'
           title: Choice Mode
+        editor:
+          anyOf:
+          - type: string
+            const: service_timezones
+          - type: 'null'
+          title: Editor
         choices:
           items:
             $ref: '#/components/schemas/ConfigChoiceResponse'
@@ -3814,13 +3975,19 @@ components:
           - type: string
           - type: 'null'
           title: Name
+        avatar:
+          $ref: '#/components/schemas/MediaAssetResponse'
+        banner:
+          $ref: '#/components/schemas/MediaAssetResponse'
       additionalProperties: false
       type: object
       required:
       - service
       - creator_id
+      - avatar
+      - banner
       title: CreatorRosterItemResponse
-    CreatorSummary:
+    CreatorSearchItemResponse:
       properties:
         favorited:
           type: integer
@@ -3848,6 +4015,10 @@ components:
           - type: string
             format: date-time
           title: Updated
+        avatar:
+          $ref: '#/components/schemas/MediaAssetResponse'
+        banner:
+          $ref: '#/components/schemas/MediaAssetResponse'
       additionalProperties: true
       type: object
       required:
@@ -3857,7 +4028,9 @@ components:
       - name
       - service
       - updated
-      title: CreatorSummary
+      - avatar
+      - banner
+      title: CreatorSearchItemResponse
     CreatorTaskExecutionResult:
       properties:
         creator_key:
@@ -3968,6 +4141,11 @@ components:
           type: boolean
           title: Dump Post Data
           default: true
+        download_file:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Download File
       additionalProperties: false
       type: object
       title: DownloadTaskSpec
@@ -4058,6 +4236,11 @@ components:
       title: FailureStage
     FileReference:
       properties:
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Id
         name:
           anyOf:
           - type: string
@@ -4073,6 +4256,11 @@ components:
           - type: boolean
           - type: 'null'
           title: Deferred
+        preview_only:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Preview Only
       additionalProperties: true
       type: object
       title: FileReference
@@ -4474,6 +4662,308 @@ components:
       required:
       - values
       title: MCPConfigurationPatchRequest
+    MCPPostResponse:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        user:
+          type: string
+          minLength: 1
+          title: User
+        service:
+          type: string
+          minLength: 1
+          title: Service
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        content:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Content
+        substring:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Substring
+        embed:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Embed
+        shared_file:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Shared File
+        added:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Added
+        published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Published
+        edited:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Edited
+        file:
+          anyOf:
+          - $ref: '#/components/schemas/FileReference'
+          - type: 'null'
+        attachments:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/FileReference'
+            type: array
+          - type: 'null'
+          title: Attachments
+        poll:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Poll
+        captions:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Captions
+        tags:
+          anyOf:
+          - type: string
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Tags
+        origin:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Origin
+        preview_state:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Preview State
+        has_full:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Has Full
+        preview_attempts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Preview Attempts
+        detail_fetched:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Detail Fetched
+        import_size_cap_gb:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Import Size Cap Gb
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+        prev:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prev
+        effective_published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Effective Published
+        published_service_timezone:
+          type: string
+          title: Published Service Timezone
+        published_target_timezone:
+          type: string
+          title: Published Target Timezone
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - user
+      - service
+      - published_service_timezone
+      - published_target_timezone
+      title: MCPPostResponse
+    MCPRevisionResponse:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        user:
+          type: string
+          minLength: 1
+          title: User
+        service:
+          type: string
+          minLength: 1
+          title: Service
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        content:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Content
+        substring:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Substring
+        embed:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Embed
+        shared_file:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Shared File
+        added:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Added
+        published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Published
+        edited:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Edited
+        file:
+          anyOf:
+          - $ref: '#/components/schemas/FileReference'
+          - type: 'null'
+        attachments:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/FileReference'
+            type: array
+          - type: 'null'
+          title: Attachments
+        poll:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Poll
+        captions:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Captions
+        tags:
+          anyOf:
+          - type: string
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Tags
+        origin:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Origin
+        preview_state:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Preview State
+        has_full:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Has Full
+        preview_attempts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Preview Attempts
+        detail_fetched:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Detail Fetched
+        import_size_cap_gb:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Import Size Cap Gb
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+        prev:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prev
+        revision_id:
+          type: integer
+          title: Revision Id
+        effective_published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Effective Published
+        published_service_timezone:
+          type: string
+          title: Published Service Timezone
+        published_target_timezone:
+          type: string
+          title: Published Target Timezone
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - user
+      - service
+      - revision_id
+      - published_service_timezone
+      - published_target_timezone
+      title: MCPRevisionResponse
     MCPStatusResponse:
       properties:
         running:
@@ -4698,6 +5188,33 @@ components:
       - safety
       - open_world
       title: MCPToolResponse
+    MediaAssetResponse:
+      properties:
+        kind:
+          type: string
+          enum:
+          - avatar
+          - banner
+          - cover
+          - attachment
+          - content
+          title: Kind
+        thumbnail_url:
+          type: string
+          title: Thumbnail Url
+        preview_url:
+          type: string
+          title: Preview Url
+        original_url:
+          type: string
+          title: Original Url
+      type: object
+      required:
+      - kind
+      - thumbnail_url
+      - preview_url
+      - original_url
+      title: MediaAssetResponse
     NamingApplyRequest:
       properties:
         preview_id:
@@ -4725,6 +5242,8 @@ components:
           title: Resolved Default Output
         naming:
           $ref: '#/components/schemas/ProjectNamingConfiguration'
+        published_time:
+          $ref: '#/components/schemas/PublishedTimePolicySnapshot'
         revision:
           type: string
           title: Revision
@@ -4737,6 +5256,7 @@ components:
       - default_output
       - resolved_default_output
       - naming
+      - published_time
       - revision
       title: NamingConfigurationResponse
     NamingConversionProgress:
@@ -4867,6 +5387,8 @@ components:
           title: Revision
         naming:
           $ref: '#/components/schemas/ProjectNamingConfiguration'
+        published_time:
+          $ref: '#/components/schemas/PublishedTimePolicySnapshot'
         origin:
           type: string
           enum:
@@ -4874,6 +5396,7 @@ components:
           - project_change
           - legacy_migration
           - recovered
+          - legacy_raw
           title: Origin
         created_at:
           type: string
@@ -4888,6 +5411,7 @@ components:
       - id
       - revision
       - naming
+      - published_time
       - origin
       - created_at
       title: NamingLayoutVersionResponse
@@ -4936,6 +5460,10 @@ components:
         revision:
           type: string
           title: Revision
+        target_layout_revision:
+          type: string
+          title: Target Layout Revision
+          default: ''
         fingerprint:
           type: string
           title: Fingerprint
@@ -5067,6 +5595,12 @@ components:
             $ref: '#/components/schemas/NamingSourceDifferenceResponse'
           type: array
           title: Differences
+        default_published_time_mode:
+          type: string
+          enum:
+          - kemono_utc
+          - pawchive_raw
+          title: Default Published Time Mode
       type: object
       required:
       - format
@@ -5076,6 +5610,7 @@ components:
       - defaulted_fields
       - warnings
       - differences
+      - default_published_time_mode
       title: NamingSourceParseResponse
     NamingSourceWarningResponse:
       properties:
@@ -5134,6 +5669,19 @@ components:
           type: string
           pattern: ^[0-9a-f]{64}$
           title: Digest
+        published_time_mode:
+          anyOf:
+          - type: string
+            enum:
+            - kemono_utc
+            - pawchive_raw
+            - custom
+          - type: 'null'
+          title: Published Time Mode
+        published_time:
+          anyOf:
+          - $ref: '#/components/schemas/PublishedTimePolicySnapshot'
+          - type: 'null'
       type: object
       required:
       - format
@@ -5166,7 +5714,7 @@ components:
       - scope
       - value_mode
       title: PathSelectorResponse
-    Post:
+    PawchivePostDetailResponse:
       properties:
         id:
           type: string
@@ -5294,209 +5842,190 @@ components:
           - type: string
           - type: 'null'
           title: Prev
+        cover:
+          anyOf:
+          - $ref: '#/components/schemas/MediaAssetResponse'
+          - type: 'null'
+        effective_published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Effective Published
+        published_service_timezone:
+          type: string
+          title: Published Service Timezone
+        published_target_timezone:
+          type: string
+          title: Published Target Timezone
+        media:
+          items:
+            $ref: '#/components/schemas/MediaAssetResponse'
+          type: array
+          title: Media
       additionalProperties: true
       type: object
       required:
       - id
       - user
       - service
-      title: Post
-    ProjectConfiguration:
+      - published_service_timezone
+      - published_target_timezone
+      title: PawchivePostDetailResponse
+    PawchivePostSummaryResponse:
       properties:
-        schema_version:
-          type: integer
-          const: 5
-          title: Schema Version
-          default: 5
-        default_output:
+        id:
           type: string
-          format: path
-          title: Default Output
-          default: downloads
-        creators:
-          items:
-            $ref: '#/components/schemas/CreatorReference'
-          type: array
-          title: Creators
-        blockers:
-          items:
-            $ref: '#/components/schemas/BlockerSpec'
-          type: array
-          title: Blockers
-        naming:
-          $ref: '#/components/schemas/ProjectNamingConfiguration'
-        automatic_sync:
-          items:
-            $ref: '#/components/schemas/AutomaticSyncPlan'
-          type: array
-          title: Automatic Sync
-      additionalProperties: false
-      type: object
-      title: ProjectConfiguration
-      description: Versioned project-local configuration.
-    ProjectDocumentResponse:
-      properties:
-        path:
+          minLength: 1
+          title: Id
+        user:
           type: string
-          format: path
-          title: Path
+          minLength: 1
+          title: User
+        service:
+          type: string
+          minLength: 1
+          title: Service
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
         content:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Content
-        revision:
-          type: string
-          title: Revision
-        configuration:
-          $ref: '#/components/schemas/ProjectConfiguration'
-      type: object
-      required:
-      - path
-      - content
-      - revision
-      - configuration
-      title: ProjectDocumentResponse
-    ProjectLayoutConversionSource:
-      properties:
-        kind:
-          type: string
-          const: project_layout
-          title: Kind
-          default: project_layout
-        version_ids:
-          items:
-            type: string
-          type: array
-          minItems: 1
-          title: Version Ids
-      type: object
-      required:
-      - version_ids
-      title: ProjectLayoutConversionSource
-    ProjectNamingConfiguration:
-      properties:
-        creator_dirname_format:
-          type: string
-          title: Creator Dirname Format
-          default: '{creator_name} [{service}-{creator_id}]'
-        post_dirname_format:
-          type: string
-          title: Post Dirname Format
-          default: '{title}'
-        revision_dirname_format:
-          type: string
-          title: Revision Dirname Format
-          default: '{revision_id}'
-        post_structure:
-          $ref: '#/components/schemas/ProjectPostStructureConfiguration'
-        mix_posts:
-          type: boolean
-          title: Mix Posts
-          default: false
-        sequential_filename:
-          type: boolean
-          title: Sequential Filename
-          default: false
-        sequential_filename_excludes:
-          items:
-            type: string
-          type: array
-          uniqueItems: true
-          title: Sequential Filename Excludes
-        filename_format:
-          type: string
-          title: Filename Format
-          default: '{}'
-        group_by_year:
-          type: boolean
-          title: Group By Year
-          default: false
-        group_by_month:
-          type: boolean
-          title: Group By Month
-          default: false
-        year_dirname_format:
-          type: string
-          title: Year Dirname Format
-          default: '{year}'
-        month_dirname_format:
-          type: string
-          title: Month Dirname Format
-          default: '{year}-{month:02d}'
-      additionalProperties: false
-      type: object
-      title: ProjectNamingConfiguration
-      description: Project-local directory layout and filename templates.
-    ProjectPostStructureConfiguration:
-      properties:
-        attachments:
-          type: string
-          format: path
-          title: Attachments
-          default: attachments
-        content:
-          type: string
-          format: path
-          title: Content
-          default: content.txt
-        external_links:
-          type: string
-          format: path
-          title: External Links
-          default: external_links.txt
+        substring:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Substring
+        embed:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Embed
+        shared_file:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Shared File
+        added:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Added
+        published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Published
+        edited:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Edited
         file:
+          anyOf:
+          - $ref: '#/components/schemas/FileReference'
+          - type: 'null'
+        attachments:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/FileReference'
+            type: array
+          - type: 'null'
+          title: Attachments
+        poll:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Poll
+        captions:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Captions
+        tags:
+          anyOf:
+          - type: string
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Tags
+        origin:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Origin
+        preview_state:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Preview State
+        has_full:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Has Full
+        preview_attempts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Preview Attempts
+        detail_fetched:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Detail Fetched
+        import_size_cap_gb:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Import Size Cap Gb
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+        prev:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prev
+        cover:
+          anyOf:
+          - $ref: '#/components/schemas/MediaAssetResponse'
+          - type: 'null'
+        effective_published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Effective Published
+        published_service_timezone:
           type: string
-          title: File
-          default: '{id}_{}'
-        revisions:
+          title: Published Service Timezone
+        published_target_timezone:
           type: string
-          format: path
-          title: Revisions
-          default: revisions
-      additionalProperties: false
-      type: object
-      title: ProjectPostStructureConfiguration
-      description: Project-local names used inside each downloaded work directory.
-    ProjectSummaryResponse:
-      properties:
-        name:
-          type: string
-          title: Name
-        root:
-          type: string
-          format: path
-          title: Root
-        project_config:
-          type: string
-          format: path
-          title: Project Config
-        default_output:
-          type: string
-          format: path
-          title: Default Output
-        resolved_default_output:
-          type: string
-          format: path
-          title: Resolved Default Output
-        dotenv_files:
-          items:
-            type: string
-            format: path
-          type: array
-          title: Dotenv Files
-        version:
-          type: string
-          title: Version
+          title: Published Target Timezone
+      additionalProperties: true
       type: object
       required:
-      - name
-      - root
-      - project_config
-      - default_output
-      - resolved_default_output
-      - dotenv_files
-      - version
-      title: ProjectSummaryResponse
-    Revision:
+      - id
+      - user
+      - service
+      - published_service_timezone
+      - published_target_timezone
+      title: PawchivePostSummaryResponse
+    PawchiveRevisionDetailResponse:
       properties:
         id:
           type: string
@@ -5627,6 +6156,27 @@ components:
         revision_id:
           type: integer
           title: Revision Id
+        cover:
+          anyOf:
+          - $ref: '#/components/schemas/MediaAssetResponse'
+          - type: 'null'
+        effective_published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Effective Published
+        published_service_timezone:
+          type: string
+          title: Published Service Timezone
+        published_target_timezone:
+          type: string
+          title: Published Target Timezone
+        media:
+          items:
+            $ref: '#/components/schemas/MediaAssetResponse'
+          type: array
+          title: Media
       additionalProperties: true
       type: object
       required:
@@ -5634,7 +6184,390 @@ components:
       - user
       - service
       - revision_id
-      title: Revision
+      - published_service_timezone
+      - published_target_timezone
+      title: PawchiveRevisionDetailResponse
+    PawchiveRevisionSummaryResponse:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        user:
+          type: string
+          minLength: 1
+          title: User
+        service:
+          type: string
+          minLength: 1
+          title: Service
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        content:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Content
+        substring:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Substring
+        embed:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Embed
+        shared_file:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Shared File
+        added:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Added
+        published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Published
+        edited:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Edited
+        file:
+          anyOf:
+          - $ref: '#/components/schemas/FileReference'
+          - type: 'null'
+        attachments:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/FileReference'
+            type: array
+          - type: 'null'
+          title: Attachments
+        poll:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Poll
+        captions:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Captions
+        tags:
+          anyOf:
+          - type: string
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Tags
+        origin:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Origin
+        preview_state:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Preview State
+        has_full:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Has Full
+        preview_attempts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Preview Attempts
+        detail_fetched:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Detail Fetched
+        import_size_cap_gb:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Import Size Cap Gb
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+        prev:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prev
+        revision_id:
+          type: integer
+          title: Revision Id
+        cover:
+          anyOf:
+          - $ref: '#/components/schemas/MediaAssetResponse'
+          - type: 'null'
+        effective_published:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Effective Published
+        published_service_timezone:
+          type: string
+          title: Published Service Timezone
+        published_target_timezone:
+          type: string
+          title: Published Target Timezone
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - user
+      - service
+      - revision_id
+      - published_service_timezone
+      - published_target_timezone
+      title: PawchiveRevisionSummaryResponse
+    ProjectConfiguration:
+      properties:
+        schema_version:
+          type: integer
+          const: 5
+          title: Schema Version
+          default: 5
+        default_output:
+          type: string
+          format: path
+          title: Default Output
+          default: downloads
+        creators:
+          items:
+            $ref: '#/components/schemas/CreatorReference'
+          type: array
+          title: Creators
+        blockers:
+          items:
+            $ref: '#/components/schemas/BlockerSpec'
+          type: array
+          title: Blockers
+        naming:
+          $ref: '#/components/schemas/ProjectNamingConfiguration'
+        automatic_sync:
+          items:
+            $ref: '#/components/schemas/AutomaticSyncPlan'
+          type: array
+          title: Automatic Sync
+      additionalProperties: false
+      type: object
+      title: ProjectConfiguration
+      description: Versioned project-local configuration.
+    ProjectDocumentResponse:
+      properties:
+        path:
+          type: string
+          format: path
+          title: Path
+        content:
+          type: string
+          title: Content
+        revision:
+          type: string
+          title: Revision
+        configuration:
+          $ref: '#/components/schemas/ProjectConfiguration'
+      type: object
+      required:
+      - path
+      - content
+      - revision
+      - configuration
+      title: ProjectDocumentResponse
+    ProjectLayoutConversionSource:
+      properties:
+        kind:
+          type: string
+          const: project_layout
+          title: Kind
+          default: project_layout
+        version_ids:
+          items:
+            type: string
+          type: array
+          minItems: 1
+          title: Version Ids
+      type: object
+      required:
+      - version_ids
+      title: ProjectLayoutConversionSource
+    ProjectNamingConfiguration:
+      properties:
+        creator_dirname_format:
+          type: string
+          title: Creator Dirname Format
+          default: '{creator_name} [{service}-{creator_id}]'
+        post_dirname_format:
+          type: string
+          title: Post Dirname Format
+          default: '{title} [{post_id}]'
+        revision_dirname_format:
+          type: string
+          title: Revision Dirname Format
+          default: '{revision_id}'
+        post_structure:
+          $ref: '#/components/schemas/ProjectPostStructureConfiguration'
+        mix_posts:
+          type: boolean
+          title: Mix Posts
+          default: false
+        sequential_filename:
+          type: boolean
+          title: Sequential Filename
+          default: true
+        sequential_filename_excludes:
+          items:
+            type: string
+          type: array
+          uniqueItems: true
+          title: Sequential Filename Excludes
+        filename_format:
+          type: string
+          title: Filename Format
+          default: '{}'
+        group_by_year:
+          type: boolean
+          title: Group By Year
+          default: false
+        group_by_month:
+          type: boolean
+          title: Group By Month
+          default: false
+        year_dirname_format:
+          type: string
+          title: Year Dirname Format
+          default: '{year}'
+        month_dirname_format:
+          type: string
+          title: Month Dirname Format
+          default: '{year}-{month:02d}'
+      additionalProperties: false
+      type: object
+      title: ProjectNamingConfiguration
+      description: Project-local directory layout and filename templates.
+    ProjectPostStructureConfiguration:
+      properties:
+        attachments:
+          type: string
+          format: path
+          title: Attachments
+          default: attachments
+        content:
+          type: string
+          format: path
+          title: Content
+          default: content.txt
+        external_links:
+          type: string
+          format: path
+          title: External Links
+          default: external_links.txt
+        file:
+          type: string
+          title: File
+          default: '{id}_{}'
+        revisions:
+          type: string
+          format: path
+          title: Revisions
+          default: revisions
+      additionalProperties: false
+      type: object
+      title: ProjectPostStructureConfiguration
+      description: Project-local names used inside each downloaded work directory.
+    ProjectSummaryResponse:
+      properties:
+        name:
+          type: string
+          title: Name
+        root:
+          type: string
+          format: path
+          title: Root
+        project_config:
+          type: string
+          format: path
+          title: Project Config
+        default_output:
+          type: string
+          format: path
+          title: Default Output
+        resolved_default_output:
+          type: string
+          format: path
+          title: Resolved Default Output
+        dotenv_files:
+          items:
+            type: string
+            format: path
+          type: array
+          title: Dotenv Files
+        version:
+          type: string
+          title: Version
+        published_target_timezone:
+          type: string
+          title: Published Target Timezone
+      type: object
+      required:
+      - name
+      - root
+      - project_config
+      - default_output
+      - resolved_default_output
+      - dotenv_files
+      - version
+      - published_target_timezone
+      title: ProjectSummaryResponse
+    PublishedTimePolicySnapshot:
+      properties:
+        mode:
+          type: string
+          enum:
+          - normalized
+          - legacy_raw
+          - kemono_utc
+          title: Mode
+          default: normalized
+        target_timezone:
+          type: string
+          title: Target Timezone
+          default: UTC
+        fallback_service_timezone:
+          type: string
+          title: Fallback Service Timezone
+          default: UTC
+        service_timezones:
+          additionalProperties:
+            type: string
+          type: object
+          title: Service Timezones
+      type: object
+      title: PublishedTimePolicySnapshot
     SessionResponse:
       properties:
         authenticated:
@@ -5750,6 +6683,11 @@ components:
           - type: boolean
           - type: 'null'
           title: Mix Posts
+        download_file:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Download File
         start_time:
           anyOf:
           - type: string
@@ -6297,6 +7235,8 @@ tags:
   description: Recurring creator synchronization plans, runs, and recent update counts.
 - name: pawchive
   description: Public Pawchive search and work data.
+- name: media
+  description: Authenticated same-origin previews of Pawchive image media.
 - name: filesystem
   description: WebUI filesystem path picker.
 - name: system

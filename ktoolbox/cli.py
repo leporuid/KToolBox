@@ -187,6 +187,7 @@ class KToolBoxCli:
         path: Path | str = Path("."),
         *,
         dump_post_data: bool = True,
+        download_file: bool | None = None,
         naming: ProjectNamingConfiguration | None = None,
         reporter: ProgressReporter | None = None,
     ) -> str | None:
@@ -207,18 +208,29 @@ class KToolBoxCli:
         output_path = path if isinstance(path, Path) else Path(path)
 
         naming = naming or ProjectNamingConfiguration()
+        published_time = config.published_time.policy()
         try:
             async with create_pawchive_client() as client:
                 post = await _requested_post(client, service, creator_id, post_id, revision_id)
-                post_path = output_path / generate_post_path_name(post, naming)
+                post_path = output_path / generate_post_path_name(post, naming, published_time)
                 if revision_id:
-                    post_path = post_path / naming.post_structure.revisions / generate_revision_path_name(post, naming)
+                    post_path = (
+                        post_path
+                        / naming.post_structure.revisions
+                        / generate_revision_path_name(
+                            post,
+                            naming,
+                            published_time,
+                        )
+                    )
 
                 jobs = await create_job_from_post(
                     post,
                     post_path,
                     naming=naming,
+                    published_time=published_time,
                     dump_post_data=dump_post_data,
+                    download_file=download_file,
                     client=client,
                 )
 
@@ -229,14 +241,18 @@ class KToolBoxCli:
                         revisions = []
                     for revision in revisions:
                         revision_path = (
-                            post_path / naming.post_structure.revisions / generate_revision_path_name(revision, naming)
+                            post_path
+                            / naming.post_structure.revisions
+                            / generate_revision_path_name(revision, naming, published_time)
                         )
                         jobs.extend(
                             await create_job_from_post(
                                 revision,
                                 revision_path,
                                 naming=naming,
+                                published_time=published_time,
                                 dump_post_data=dump_post_data,
+                                download_file=download_file,
                                 client=client,
                             )
                         )
@@ -256,6 +272,7 @@ class KToolBoxCli:
         *,
         save_creator_indices: bool = False,
         mix_posts: bool | None = None,
+        download_file: bool | None = None,
         naming: ProjectNamingConfiguration | None = None,
         start_time: str | None = None,
         end_time: str | None = None,
@@ -285,6 +302,7 @@ class KToolBoxCli:
         excluded_keyword_set = set(excluded_keyword_values) if excluded_keyword_values else config.job.keywords_exclude
 
         naming = naming or ProjectNamingConfiguration()
+        published_time = config.published_time.policy()
         try:
             async with create_pawchive_client() as client:
                 profile = await client.get_creator_profile(service, creator_id)
@@ -301,11 +319,13 @@ class KToolBoxCli:
                     creator_id,
                     creator_path,
                     naming=naming,
+                    published_time=published_time,
                     all_pages=length is None,
                     offset=offset,
                     length=length,
                     save_creator_indices=save_creator_indices,
                     mix_posts=mix_posts,
+                    download_file=download_file,
                     start_time=datetime.strptime(start_time, "%Y-%m-%d") if start_time else None,
                     end_time=datetime.strptime(end_time, "%Y-%m-%d") if end_time else None,
                     keywords=keyword_set,

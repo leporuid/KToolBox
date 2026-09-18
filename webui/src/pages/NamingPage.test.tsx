@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -33,6 +33,13 @@ const naming = {
   group_by_month: false,
   year_dirname_format: "{year}",
   month_dirname_format: "{month:02d}",
+};
+
+const publishedTime = {
+  mode: "normalized",
+  target_timezone: "UTC",
+  fallback_service_timezone: "UTC",
+  service_timezones: { fanbox: "Asia/Tokyo", patreon: "UTC" },
 };
 
 const preview = {
@@ -90,6 +97,7 @@ const layoutVersions = [
     id: "naming-layout-source",
     revision: "naming-revision-source",
     naming,
+    published_time: { ...publishedTime, mode: "legacy_raw" },
     origin: "project_change",
     created_at: "2026-07-25T00:00:00Z",
     is_current: false,
@@ -101,6 +109,7 @@ const layoutVersions = [
       ...naming,
       post_dirname_format: "{post_id}",
     },
+    published_time: publishedTime,
     origin: "recovered",
     created_at: "2026-07-24T00:00:00Z",
     is_current: false,
@@ -109,6 +118,7 @@ const layoutVersions = [
     id: "naming-layout-current",
     revision: "naming-revision-current",
     naming,
+    published_time: publishedTime,
     origin: "project_current",
     created_at: "2026-07-26T00:00:00Z",
     is_current: true,
@@ -155,6 +165,47 @@ afterEach(async () => {
 });
 
 describe("Naming format page", { timeout: 10_000 }, () => {
+  it.each([".", "./", "attachments"])("previews attachment directory %s at the correct level", async (directory) => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, "", "/naming?tab=templates");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path.endsWith("/session")) return json(session);
+      if (path.endsWith("/naming/legacy-migration")) return json(noLegacyMigration);
+      if (path.endsWith("/naming/layout-versions")) return json(layoutVersions);
+      if (path.endsWith("/startup-notices") || path.endsWith("/naming/conversions")) return json([]);
+      if (path.endsWith("/naming/legacy-context")) return json({ roots: ["downloads"], conversion_pending: false });
+      if (path.endsWith("/naming")) return json({
+        default_output: "downloads",
+        resolved_default_output: "/project/downloads",
+        naming: { ...naming, sequential_filename: true, post_structure: { ...naming.post_structure, attachments: directory } },
+        published_time: publishedTime,
+        revision: "revision-1",
+        conversion_pending: false,
+      });
+      throw new Error(`Unexpected request: ${path}`);
+    }));
+    render(<BrowserRouter><App /></BrowserRouter>);
+
+    const tree = within(await screen.findByRole("tree", { name: "Directory tree preview" }));
+    const attachment = tree.getByRole("treeitem", { name: "1.png" });
+    const cover = tree.getByRole("treeitem", { name: "987654_cover.jpg" });
+    if (directory === "attachments") {
+      expect(tree.getByRole("treeitem", { name: "attachments" })).toBeInTheDocument();
+      expect(attachment.style.paddingInlineStart).not.toBe(cover.style.paddingInlineStart);
+    } else {
+      expect(tree.queryByRole("treeitem", { name: directory })).not.toBeInTheDocument();
+      expect(attachment.style.paddingInlineStart).toBe(cover.style.paddingInlineStart);
+    }
+    await user.click(screen.getByRole("tab", { name: "Directory structure" }));
+    expect(screen.getByRole("textbox", { name: "Attachments directory" })).not.toHaveAttribute("aria-invalid", "true");
+    const content = screen.getByRole("textbox", { name: "Content file" });
+    await user.clear(content);
+    await user.type(content, "./");
+    expect(content).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Save directory structure" })).toBeDisabled();
+  });
+
   it("scans real roots and defaults to converting every safe creator", async () => {
     const user = userEvent.setup();
     window.history.replaceState({}, "", "/naming");
@@ -197,6 +248,7 @@ describe("Naming format page", { timeout: 10_000 }, () => {
             default_output: "downloads",
             resolved_default_output: "/project/downloads",
             naming,
+            published_time: publishedTime,
             revision: "revision-1",
             conversion_pending: true,
           });
@@ -294,6 +346,7 @@ describe("Naming format page", { timeout: 10_000 }, () => {
             recognized_fields: ["post_dirname_format"],
             defaulted_fields: ["creator_dirname_format"],
             warnings: [{ code: "ignored_unknown_entries", count: 1 }],
+            default_published_time_mode: "kemono_utc",
             differences: [
               {
                 path: "post_dirname_format",
@@ -320,6 +373,7 @@ describe("Naming format page", { timeout: 10_000 }, () => {
             default_output: "downloads",
             resolved_default_output: "/project/downloads",
             naming,
+            published_time: publishedTime,
             revision: "revision-1",
             conversion_pending: false,
           });
@@ -361,6 +415,7 @@ describe("Naming format page", { timeout: 10_000 }, () => {
         kind: "pasted_config",
         format: "env",
         digest: "a".repeat(64),
+        published_time_mode: "kemono_utc",
       },
     });
     expect((previewBody?.source as { content?: string }).content).toBeUndefined();
@@ -435,6 +490,7 @@ describe("Naming format page", { timeout: 10_000 }, () => {
             default_output: currentDefaultOutput,
             resolved_default_output: `/project/${currentDefaultOutput}`,
             naming: currentNaming,
+            published_time: publishedTime,
             revision,
             conversion_pending: true,
           });
@@ -444,6 +500,7 @@ describe("Naming format page", { timeout: 10_000 }, () => {
             default_output: currentDefaultOutput,
             resolved_default_output: `/project/${currentDefaultOutput}`,
             naming: currentNaming,
+            published_time: publishedTime,
             revision,
             conversion_pending: false,
           });
@@ -523,6 +580,7 @@ describe("Naming format page", { timeout: 10_000 }, () => {
             default_output: "downloads",
             resolved_default_output: "/project/downloads",
             naming,
+            published_time: publishedTime,
             revision: migrated ? "revision-2" : "revision-1",
             conversion_pending: true,
           });

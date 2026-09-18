@@ -2,6 +2,7 @@ import type { TranslationShape } from "./types";
 import { en } from "./en";
 import { namingTranslations } from "./naming";
 import { automaticSyncTranslations } from "./automaticSync";
+import { sensitiveMediaTranslations } from "./sensitiveMedia";
 
 export const zhCN = {
   "brand": "KToolBox",
@@ -128,7 +129,9 @@ export const zhCN = {
     "primaryNavigation": "主导航",
     "securityTitle": "仅在可信网络中使用",
     "securityBody": "当前会话使用 HTTP，凭据和任务数据在传输过程中不会加密。",
-    "securityAdvice": "网络并非完全可信时，请使用 HTTPS，或将 WebUI 仅绑定到 127.0.0.1。"
+    "securityAdvice": "网络并非完全可信时，请使用 HTTPS，或将 WebUI 仅绑定到 127.0.0.1。",
+    "timezoneLabel": "发布时间目标时区",
+    "timezoneDescription": "发布时间、命名模板和日期分组均使用这里配置的目标时区。"
   },
   "overview": {
     "eyebrow": "项目工作台",
@@ -147,7 +150,7 @@ export const zhCN = {
   },
   "creators": {
     "title": "作者",
-    "description": "维护项目作者清单，并在不加载媒体的情况下搜索 Pawchive。",
+    "description": "维护项目作者清单，并搜索 Pawchive 作者资料。",
     "add": "添加作者",
     "edit": "编辑作者",
     "search": "搜索 Pawchive",
@@ -205,7 +208,7 @@ export const zhCN = {
       "title": "标题",
       "content": "正文",
       "tags": "标签",
-      "fileName": "主文件名",
+      "fileName": "主文件名（封面）",
       "attachmentName": "附件文件名",
       "postId": "作品 ID",
       "service": "平台"
@@ -242,6 +245,7 @@ export const zhCN = {
   },
   "naming": namingTranslations["zh-CN"],
   "automaticSync": automaticSyncTranslations["zh-CN"],
+  "sensitiveMedia": sensitiveMediaTranslations["zh-CN"],
   "configuration": {
     "title": "全局配置",
     "description": "使用来自 KToolBox 配置类文档的说明编辑类型化设置。",
@@ -276,6 +280,11 @@ export const zhCN = {
     "changedLines": "变更行数",
     "filePath": "文件路径",
     "file": "配置文件",
+    "serviceName": "Service",
+    "serviceTimezone": "Service 时区",
+    "addServiceTimezone": "添加 Service 时区",
+    "removeServiceTimezone": "删除 {{service}} 的时区",
+    "noServiceTimezones": "尚未配置 Service 专属时区。",
     "pendingCount": "{{count}} 项待保存变更",
     "pendingCount_other": "{{count}} 项待保存变更"
   },
@@ -335,6 +344,9 @@ export const zhCN = {
     "identityPathHint": "各段对应 Pawchive 的 <code>/平台/user/作者 ID/post/作品 ID</code> 地址结构。",
     "dumpMetadata": "保存作品元数据",
     "dumpMetadataHint": "在作品目录中将作品数据保存为 post.json。",
+    "downloadPrimaryFile": "下载主文件（封面）",
+    "downloadPrimaryFileHint": "下载作品的主文件，该文件通常是作品封面。",
+    "creatorSelectionHint": "已选择 {{count}} 位；无需离开任务表单即可新增作者。",
     "saveIndex": "保存作者索引",
     "saveIndexHint": "同步完成后保存作品与目录索引；混合保存模式下不会生成索引。",
     "empty": "任务队列为空",
@@ -372,6 +384,7 @@ export const zhCN = {
       "failed": "失败"
     },
     "eventDetails": {
+      "creatorWorkSummary": "{{creator}} · 检查 {{fetched}} 个作品 · 接受 {{accepted}} 个 · 入队 {{queued}} 个文件 · 完成 {{completed}} · 已存在 {{existing}} · 失败 {{failed}}",
       "creatorSummary": "{{creator}} · 入队 {{queued}} · 完成 {{completed}} · 已存在 {{existing}} · 失败 {{failed}}",
       "transferStarted": "{{file}} · {{creator}} · {{completed}} / {{total}}",
       "transferFinished": "{{file}} · {{creator}} · {{outcome}} · {{completed}} / {{total}} · {{duration}} · {{speed}}"
@@ -419,6 +432,8 @@ export const zhCN = {
       "creatorGroup": "作者",
       "fileGroup": "文件",
       "otherGroup": "其他阶段",
+      "showMoreFiles": "展开另外 {{count}} 条文件详情",
+      "collapseFiles": "收起文件详情",
       "moreFiles": "另有 {{count}} 个文件失败未展开。",
       "retryable": "重试可能成功",
       "notRetryable": "需要处理",
@@ -434,6 +449,7 @@ export const zhCN = {
         "disk_full": "磁盘剩余空间不足。",
         "download_failed": "文件下载失败。",
         "resource_not_found": "没有找到指定的作者、作品或文件。",
+        "resource_not_found_file": "Pawchive 文件服务器中缺少此文件。",
         "unknown": "意外错误中断了此操作。"
       },
       "stages": {
@@ -453,7 +469,8 @@ export const zhCN = {
         "response_incompatible": "请更新 KToolBox；若已是最新版，请报告操作名称和字段路径。",
         "permission_denied": "选择可写的输出目录，或修正目录权限。",
         "disk_full": "释放磁盘空间，或选择其他输出目录。",
-        "resource_not_found": "核对平台和 ID 后再重试。"
+        "resource_not_found": "核对平台和 ID 后再重试。",
+        "resource_not_found_file": "上游文件当前不可用，可稍后重试或跳过此文件。"
       }
     },
     "events": {
@@ -486,7 +503,7 @@ export const zhCN = {
   },
   "posts": {
     "title": "作品",
-    "description": "搜索类型化 Pawchive 元数据并创建下载任务，不会自动加载远程媒体。",
+    "description": "搜索类型化 Pawchive 元数据并创建下载任务；图片预览由 NSFW 模式控制。",
     "search": "搜索作品",
     "creatorId": "作者 ID",
     "postId": "作品 ID",
@@ -499,6 +516,9 @@ export const zhCN = {
     "empty": "没有找到作品",
     "post": "作品",
     "published": "发布时间",
+    "effectivePublished": "有效发布时间",
+    "rawPublished": "Pawchive 原始值",
+    "publicationConversion": "原始发布时间按 {{serviceTimezone}} 解释 → {{targetTimezone}} 目标时间",
     "details": "作品详情",
     "contentHidden": "作品正文默认折叠",
     "showContent": "显示正文",
@@ -735,6 +755,7 @@ export const zhCN = {
     "disabled": "已停用",
     "search": "搜索",
     "refresh": "刷新",
+    "loadMore": "加载更多",
     "confirm": "确认",
     "undo": "撤销",
     "back": "返回",

@@ -21,6 +21,7 @@ import {
   IconHistory,
   IconPlayerPause,
   IconPlayerPlay,
+  IconPhoto,
   IconPlus,
   IconRefresh,
   IconSearch,
@@ -63,9 +64,10 @@ import {
   SelectionCheckbox,
   SortableColumn,
   TableColumnLabel,
-  ComboBoxField,
 } from "../components/ui";
 import { RemotePathField } from "../components/RemotePathField";
+import { CreatorAvatar } from "../components/SensitiveMedia";
+import { TimeZoneComboBox } from "../components/TimeZoneComboBox";
 import { api, ApiError, errorText } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatDateTime } from "../lib/format";
@@ -97,23 +99,13 @@ type PlanDraft = {
     output: string;
     save_creator_indices: boolean;
     mix_posts: boolean | null;
+    download_file: boolean;
     keywords: string[];
       keywords_exclude: string[];
   };
 };
 
 const runStatusOrder = ["running", "queued", "paused", "failed", "interrupted", "completed", "skipped"];
-const timezoneSuggestions = [
-  "Asia/Shanghai",
-  "Asia/Tokyo",
-  "Asia/Seoul",
-  "Europe/Paris",
-  "Europe/Moscow",
-  "America/New_York",
-  "America/Los_Angeles",
-  "UTC",
-];
-
 function blankPlan(): PlanDraft {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const suffix = globalThis.crypto?.randomUUID?.().slice(0, 8) ?? Date.now().toString(36);
@@ -128,6 +120,7 @@ function blankPlan(): PlanDraft {
       output: "",
       save_creator_indices: false,
       mix_posts: null,
+      download_file: true,
       keywords: [],
       keywords_exclude: [],
     },
@@ -156,6 +149,7 @@ function normalizePlan(plan: AutomaticSyncPlan): PlanDraft {
       output: plan.options?.output ?? "",
       save_creator_indices: plan.options?.save_creator_indices ?? false,
       mix_posts: plan.options?.mix_posts ?? null,
+      download_file: plan.options?.download_file ?? true,
       keywords: [...(plan.options?.keywords ?? [])],
       keywords_exclude: [...(plan.options?.keywords_exclude ?? [])],
     },
@@ -762,9 +756,6 @@ function PlanEditor({
   const cronDetails = draft.schedule.kind === "cron"
     ? describeCron(draft.schedule.expression, timezone, i18n.resolvedLanguage ?? i18n.language)
     : null;
-  const timezoneOptions = [...new Set([Intl.DateTimeFormat().resolvedOptions().timeZone, ...timezoneSuggestions])]
-    .filter(Boolean)
-    .map((value) => ({ value, label: value }));
   const weekdayLabels = Array.from({ length: 7 }, (_, day) => {
     const date = new Date(Date.UTC(2026, 6, 26 + day));
     return new Intl.DateTimeFormat(i18n.resolvedLanguage, { weekday: "short", timeZone: "UTC" }).format(date);
@@ -871,6 +862,7 @@ function PlanEditor({
                         creators: selected ? [...draft.creators, key] : draft.creators.filter((value) => value !== key),
                       })}
                     />
+                    <CreatorAvatar asset={creator.avatar} name={creatorLabel(creator)} size="xs" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{creatorLabel(creator)}</p>
                       <p className="truncate text-xs text-muted">{creator.service}:{creator.creator_id}</p>
@@ -899,11 +891,9 @@ function PlanEditor({
                 : { kind: "interval", every: 24, unit: "hours", anchor_at: null, timezone });
             }}
           />
-          <ComboBoxField
-            icon={IconClock}
+          <TimeZoneComboBox
             label={t("automaticSync.timezone")}
             description={t("automaticSync.timezoneHint")}
-            options={timezoneOptions}
             value={timezone}
             onChange={(next) => patchSchedule({ ...draft.schedule, timezone: next })}
           />
@@ -1050,6 +1040,7 @@ function PlanEditor({
             onChange={(output) => patch({ options: { ...draft.options, output } })}
           />
           <div className="grid gap-3 md:grid-cols-2">
+            <FormSwitchField icon={IconPhoto} isSelected={draft.options.download_file} label={t("automaticSync.downloadPrimaryFile")} description={t("automaticSync.downloadPrimaryFileHint")} onChange={(download_file) => patch({ options: { ...draft.options, download_file } })} />
             <FormSwitchField icon={IconHistory} isSelected={draft.options.save_creator_indices} label={t("automaticSync.saveIndex")} description={t("automaticSync.saveIndexHint")} onChange={(save_creator_indices) => patch({ options: { ...draft.options, save_creator_indices } })} />
             <SelectField
               icon={IconFolder}

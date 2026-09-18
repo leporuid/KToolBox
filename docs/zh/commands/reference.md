@@ -1,6 +1,11 @@
 # 命令参考
 
+!!! note
+    本页是面向 CLI 自动化的进阶参考。大多数用户可直接通过 [WebUI](../webui.md) 创建和管理相同工作。
+
 运行 `ktoolbox COMMAND --help` 查看权威 Cyclopts 帮助。命令与选项使用连字符；隐藏兼容命令仍可解析旧下划线拼写。
+
+在窄屏设备上，可横向滑动表格查看全部列。
 
 ## 全局选项
 
@@ -40,8 +45,9 @@
 | `--creator-id` | 字符串 | 省略 | 作者 ID。 |
 | `--post-id` | 字符串 | 省略 | 作品 ID。 |
 | `--revision-id` | 字符串 | 省略 | 从修订列表选择此 ID。 |
-| `-o`、`--output`、`--path` | 路径 | `.` | 输出根目录。 |
+| `-o`、`--output`、`--path` | 路径 | 项目默认值 | 覆盖当前任务使用的项目下载根目录。 |
 | `--dump-post-data` / `--no-dump-post-data` | 布尔值 | 启用 | 将已校验元数据保存到 `post.json`。 |
+| `--download-file` / `--no-download-file` | 布尔值 | 环境配置 | 覆盖当前任务是否下载主文件（封面）。 |
 
 `download` 有意不应用作者清单忽略规则。
 
@@ -53,9 +59,10 @@
 | --- | --- | --- | --- |
 | `TARGET ...` | 多个字符串 | 已启用清单 | 零个或多个作者。 |
 | `--service` + `--creator-id` | 字符串 | 省略 | 添加一个显式作者；二者必须同时使用。 |
-| `-o`、`--output`、`--path` | 路径 | `.` | 输出根目录。 |
+| `-o`、`--output`、`--path` | 路径 | 项目默认值 | 覆盖当前任务使用的项目下载根目录。 |
 | `--save-creator-indices` | 布尔值 | 禁用 | 作者生产成功后原子保存索引。 |
 | `--mix-posts` / `--no-mix-posts` | 布尔值 | 环境配置 | 覆盖 `job.mix_posts`。 |
+| `--download-file` / `--no-download-file` | 布尔值 | 环境配置 | 覆盖是否下载每个作品的主文件（封面）。 |
 | `--start-time`、`--start` | 日期 | 省略 | 包含边界的发布日期下限，`YYYY-MM-DD`。 |
 | `--end-time`、`--end` | 日期 | 省略 | 包含边界的发布日期上限，`YYYY-MM-DD`。 |
 | `--offset` | 整数 | `0` | 起始作品索引。 |

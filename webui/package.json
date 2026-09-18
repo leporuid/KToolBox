@@ -1,7 +1,7 @@
 {
   "name": "ktoolbox-webui",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0-beta.1",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "generate:api": "poetry run python ../scripts/export_webui_openapi.py && openapi-typescript openapi.yaml -o src/generated/api.ts",
+    "generate:api": "uv run --no-sync python ../scripts/export_webui_openapi.py && openapi-typescript openapi.yaml -o src/generated/api.ts",
     "check:api": "npm run generate:api && git diff --exit-code -- openapi.yaml src/generated/api.ts",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",

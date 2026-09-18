@@ -25,8 +25,12 @@ export type CreatorReference = {
   enabled: boolean;
 };
 
+export type MediaAsset = WebUIApiSchemas["MediaAssetResponse"];
+
 export type CreatorRosterItem = CreatorReference & {
   name: string | null;
+  avatar?: MediaAsset | null;
+  banner?: MediaAsset | null;
 };
 
 export type BlockerScope = {
@@ -74,6 +78,7 @@ export type ConfigField = {
   apply_mode: "next_task" | "restart";
   path_selector?: PathSelector | null;
   choice_mode?: "fixed" | "suggested" | null;
+  editor?: "service_timezones" | null;
   choices?: Array<{
     value: string;
     label: string;
@@ -118,6 +123,8 @@ export type NamingConfigurationResponse = WebUIApiSchemas["NamingConfigurationRe
 export type NamingLegacyContext = WebUIApiSchemas["NamingLegacyContextResponse"];
 
 export type NamingLayoutVersion = WebUIApiSchemas["NamingLayoutVersionResponse"];
+
+export type PublishedTimePolicySnapshot = WebUIApiSchemas["PublishedTimePolicySnapshot"];
 
 export type NamingSourceParse = WebUIApiSchemas["NamingSourceParseResponse"];
 
@@ -166,6 +173,7 @@ export type DownloadTaskSpec = {
   revision_id?: string | null;
   output: string;
   dump_post_data: boolean;
+  download_file?: boolean | null;
 };
 
 export type SyncTaskSpec = {
@@ -174,6 +182,7 @@ export type SyncTaskSpec = {
   output: string;
   save_creator_indices: boolean;
   mix_posts?: boolean | null;
+  download_file?: boolean | null;
   start_time?: string | null;
   end_time?: string | null;
   offset: number;
@@ -282,6 +291,8 @@ export type CreatorSummary = {
   service: string;
   name?: string | null;
   updated?: string | null;
+  avatar?: MediaAsset | null;
+  banner?: MediaAsset | null;
 };
 
 export type PawchivePost = {
@@ -291,8 +302,13 @@ export type PawchivePost = {
   title?: string | null;
   content?: string | null;
   published?: string | null;
+  effective_published?: string | null;
+  published_service_timezone: string;
+  published_target_timezone: string;
   edited?: string | null;
   attachments?: unknown[] | null;
+  cover?: MediaAsset | null;
+  media?: MediaAsset[] | null;
   [key: string]: unknown;
 };
 

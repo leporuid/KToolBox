@@ -16,9 +16,9 @@ runs:
   using: "composite"
   steps:
     - name: Create Executable
-      run: poetry run pyinstaller ${{ inputs.spec-path }} --distpath ${{ inputs.dist-path }}
+      run: uv run --no-sync pyinstaller ${{ inputs.spec-path }} --distpath ${{ inputs.dist-path }}
       shell: bash
 
     - name: Copy Extra Files
-      run: cp README*.md example.env LICENSE dist
+      run: cp README*.md RELEASE_NOTES.md example.env LICENSE dist
       shell: bash

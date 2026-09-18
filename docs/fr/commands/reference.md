@@ -1,6 +1,11 @@
 # Référence des commandes
 
+!!! note
+    Cette référence avancée concerne l'automatisation CLI. La plupart des utilisateurs peuvent créer et gérer les mêmes opérations depuis la [WebUI](../webui.md).
+
 Exécutez `ktoolbox COMMAND --help` pour obtenir l'aide Cyclopts faisant autorité. Les noms des commandes et options utilisent des traits d'union ; les anciennes graphies avec traits de soulignement sont toujours analysées par les commandes de compatibilité masquées.
+
+Sur un écran étroit, faites défiler les tableaux horizontalement pour consulter toutes les colonnes.
 
 ## Options globales
 
@@ -40,8 +45,9 @@ Fournissez une URL de publication Pawchive, ou l'ensemble de `--service`, `--cre
 | `--creator-id` | chaîne | omis | ID du créateur. |
 | `--post-id` | chaîne | omis | ID de la publication. |
 | `--revision-id` | chaîne | omis | Choisir cette révision dans la liste. |
-| `-o`, `--output`, `--path` | chemin | `.` | Racine de sortie. |
+| `-o`, `--output`, `--path` | chemin | valeur du projet | Remplace la racine de téléchargement du projet pour cette tâche. |
 | `--dump-post-data` / `--no-dump-post-data` | booléen | activé | Enregistrer les métadonnées validées dans `post.json`. |
+| `--download-file` / `--no-download-file` | booléen | configuration d'environnement | Remplacer le téléchargement du fichier principal (couverture) pour cette tâche. |
 
 `download` n'applique volontairement pas les règles d'exclusion de la liste.
 
@@ -53,9 +59,10 @@ Chaque `TARGET` peut être une URL de créateur Pawchive, une identité `service
 | --- | --- | --- | --- |
 | `TARGET ...` | chaînes | liste activée | Zéro ou plusieurs créateurs. |
 | `--service` + `--creator-id` | chaînes | omis | Ajouter un créateur explicite ; les deux sont nécessaires ensemble. |
-| `-o`, `--output`, `--path` | chemin | `.` | Racine de sortie. |
+| `-o`, `--output`, `--path` | chemin | valeur du projet | Remplace la racine de téléchargement du projet pour cette tâche. |
 | `--save-creator-indices` | booléen | désactivé | Enregistrer atomiquement l'index du créateur après une production réussie. |
 | `--mix-posts` / `--no-mix-posts` | booléen | configuration d'environnement | Remplacer `job.mix_posts`. |
+| `--download-file` / `--no-download-file` | booléen | configuration d'environnement | Remplacer le téléchargement du fichier principal (couverture) de chaque œuvre. |
 | `--start-time`, `--start` | date | omis | Borne inférieure inclusive de publication, `YYYY-MM-DD`. |
 | `--end-time`, `--end` | date | omis | Borne supérieure inclusive de publication, `YYYY-MM-DD`. |
 | `--offset` | entier | `0` | Index de la première publication. |

@@ -1,6 +1,11 @@
 # 설정 참조
 
+!!! note
+    이 문서는 완전한 저수준 참고 자료입니다. 환경 변수나 생성 설정이 꼭 필요한 경우가 아니라면 [WebUI](../webui.md)의 현지화된 양식을 사용하세요.
+
 환경 변수 이름은 `KTOOLBOX_`로 시작하고 중첩 모델 필드를 `__`로 연결합니다. `path`, `set`, `list`로 표시된 형식은 Pydantic이 파싱합니다. dotenv의 컬렉션에는 JSON 배열을 사용하세요.
+
+좁은 화면에서는 표를 가로로 스와이프하여 모든 열을 확인할 수 있습니다.
 
 ## 루트
 
@@ -104,6 +109,14 @@ API 그룹에는 의도적으로 세션 키가 없습니다.
 | `options.rule` | 조건 그룹 | `field-match`에 필수 | 루트 재귀 규칙. |
 
 조건 그룹은 `kind = "group"`, `mode = "any"` 또는 `"all"`, 비어 있지 않은 `conditions` 목록과 선택적 `negate`를 사용합니다. 필드 조건은 `kind = "field"`, 안전한 점 표기 `field`, `contains`, `equals`, `regex`, `exists` 중 하나와 선택적 `case_sensitive`, `negate`, `expected`를 사용합니다. `exists`가 아닌 연산자는 비어 있지 않은 `values` 목록이 필요하고 `exists`는 `values`를 금지합니다.
+
+## `published_time`
+
+| 필드 | 형식 | 기본값 | 설명 |
+| --- | --- | --- | --- |
+| `target_timezone` | IANA 시간대 | `UTC` | 이름, 분류, 필터 및 WebUI 표시에 사용하는 대상 시간대. |
+| `fallback_service_timezone` | IANA 시간대 | `UTC` | 개별 설정이 없는 Service의 시간대 없는 `published` 값을 해석하는 시간대. |
+| `service_timezones` | 매핑 | Fanbox 도쿄, Patreon UTC | Pawchive Service별 시간대 없는 `published` 값을 해석하는 IANA 시간대. |
 
 ## `webui`
 

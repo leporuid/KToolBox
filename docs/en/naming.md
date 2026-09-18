@@ -7,9 +7,11 @@ Naming is project-specific in KToolBox v1. The CLI and WebUI read the same `[nam
 Open **Naming format** in the WebUI to configure:
 
 - creator, work, revision, year, and month directory templates;
-- primary-file and attachment-file templates;
+- primary-file (cover) and attachment-file templates;
 - attachment, revision, content, and external-link names inside each work;
 - year/month grouping, mixed-work layout, and sequential attachment names.
+
+Sequential attachment naming is enabled by default because Pawchive often exposes opaque storage names. Disable it only when the original filenames are meaningful and should be preserved.
 
 Template fields accept only the variable chips shown beside them, such as `{creator_name}`, `{creator_id}`, `{service}`, `{title}`, `{post_id}`, `{revision_id}`, `{year}`, and `{month}`. Path separators, parent traversal, unknown variables, and unsafe names are rejected before scanning.
 
@@ -19,11 +21,25 @@ The **Default download location** belongs to the project too. Its default value 
 
 ![Directory structure and default output](../assets/webui/37-naming-structure-desktop-light.png)
 
+## Attachments in the work directory
+
+Set the attachment directory to `.` or `./` in **Directory structure** to save attachments directly beside the work's cover and metadata. This exception applies only to the attachment directory; content, external-link, and revision paths must still have a name.
+
+Old downloads made with the following v0 setting are supported by **Legacy download conversion > Paste configuration**:
+
+```dotenv
+KTOOLBOX_JOB__POST_STRUCTURE__ATTACHMENTS=./
+```
+
+Include any other naming settings you changed in v0, since omitted ENV fields use v0 defaults. The current project format is always the target. Review the scan before confirming: attachments identified by `post.json` or the creator index are moved individually, including those in recognized revisions. Covers and metadata are not treated as attachments; unrecognized files keep their relative locations inside the work directory. Existing target files and unsafe paths block conversion instead of being overwritten.
+
 ## Convert old download locations
 
 Open the dedicated **Legacy download conversion** tab only when previously downloaded content needs to follow the saved naming format. Add one or more old locations, then choose **Scan old locations**. These locations are scan inputs, not destinations for future tasks.
 
 The converter is reusable at any time and offers two source modes. **Project history** lets you select one or more saved naming versions, which is useful when one download location contains several generations of layouts. **Paste configuration** accepts legacy `.env` naming keys, a complete `ktoolbox.toml`, a `[naming]` table, or a headerless naming fragment. The highlighted editor provides examples and field-level errors; pasted source text is parsed only in memory and is never stored in browser storage, logs, events, or conversion history. Both modes always use the current project naming revision as the read-only target and never overwrite project configuration.
+
+Each saved layout also freezes its publication-time policy. Existing pre-fix project versions are marked **Pawchive value as written**. Pasted v0 `.env` defaults to **Kemono UTC**; pasted TOML lets you choose Kemono UTC, the original Pawchive value, or custom Service timezones. For example, a Fanbox value of `2025-12-21T00:35:43` is interpreted as `Asia/Tokyo` and becomes `2025-12-20T15:35:43+00:00` for a UTC target, so a `{published}` path moves from `2025-12-21` to `2025-12-20`. The original Pawchive value remains unchanged in `post.json`.
 
 The scan reads the filesystem rather than relying only on task history, and it does not contact Pawchive. KToolBox identifies content from creator directory identities, `creator-indices.ktoolbox`, and `post.json`, without following symbolic links outside the selected locations.
 
@@ -54,3 +70,9 @@ The migration guide appears only when KToolBox detects legacy naming keys in `.e
 Closing or choosing **Ignore** dismisses only the current dialog. As long as legacy keys remain, refreshing or signing in again shows it again. Configuration migration and directory conversion are separate: after configuration succeeds, review one or more old locations and explicitly choose **Scan old locations**. No scan or file move occurs merely by opening the conversion tool.
 
 The CLI uses the project naming configuration too. When a legacy project still needs migration, start its WebUI and confirm the backed-up atomic migration. Legacy values supplied only through the process environment cannot be deleted; KToolBox ignores them for project naming and keeps warning until they are removed from the launching environment.
+
+## Related guides
+
+- Open the [WebUI guide](webui.md) for the naming page and conversion workflow.
+- Use the [configuration guide](configuration/guide.md) for global network and downloader settings.
+- Follow the [v1 migration guide](migration-v1.md) when upgrading an existing project.

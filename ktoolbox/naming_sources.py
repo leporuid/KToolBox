@@ -23,6 +23,10 @@ _BOOLEAN_FIELDS = {
     "group_by_month",
 }
 _SET_FIELDS = {"sequential_filename_excludes"}
+_LEGACY_ENV_DEFAULT_OVERRIDES = {
+    "post_dirname_format": "{title}",
+    "sequential_filename": False,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,6 +160,7 @@ def _parse_env(
     content: str,
 ) -> tuple[dict[str, Any], list[str], int, dict[str, int]]:
     values = ProjectNamingConfiguration().model_dump(mode="python")
+    values.update(_LEGACY_ENV_DEFAULT_OVERRIDES)
     recognized: list[str] = []
     ignored = 0
     line_map: dict[str, int] = {}

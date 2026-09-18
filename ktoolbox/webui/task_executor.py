@@ -81,22 +81,25 @@ class CoreTaskExecutor:
         stage = FailureStage.job_generation
         try:
             service, creator_id, post_id, revision_id = self._download_identity(spec)
+            published_time = config.published_time.policy()
             stage = FailureStage.revisions if revision_id is not None else FailureStage.work_detail
             async with create_pawchive_client() as client:
                 post = await _requested_post(client, service, creator_id, post_id, revision_id)
                 stage = FailureStage.job_generation
-                post_path = spec.output / generate_post_path_name(post, project.naming)
+                post_path = spec.output / generate_post_path_name(post, project.naming, published_time)
                 if revision_id is not None:
                     post_path = (
                         post_path
                         / project.naming.post_structure.revisions
-                        / generate_revision_path_name(post, project.naming)
+                        / generate_revision_path_name(post, project.naming, published_time)
                     )
                 jobs = await create_job_from_post(
                     post,
                     post_path,
                     naming=project.naming,
+                    published_time=published_time,
                     dump_post_data=spec.dump_post_data,
+                    download_file=spec.download_file,
                     client=client,
                 )
                 if revision_id is None and config.job.include_revisions:
@@ -110,14 +113,16 @@ class CoreTaskExecutor:
                         revision_path = (
                             post_path
                             / project.naming.post_structure.revisions
-                            / generate_revision_path_name(revision, project.naming)
+                            / generate_revision_path_name(revision, project.naming, published_time)
                         )
                         jobs.extend(
                             await create_job_from_post(
                                 revision,
                                 revision_path,
                                 naming=project.naming,
+                                published_time=published_time,
                                 dump_post_data=spec.dump_post_data,
+                                download_file=spec.download_file,
                                 client=client,
                             )
                         )
@@ -152,12 +157,13 @@ class CoreTaskExecutor:
         if not isinstance(task.spec, SyncTaskSpec):
             raise TypeError("sync execution requires a sync task")
         spec = task.spec
+        published_time = config.published_time.policy()
         automatic_windows = (
             {
                 window.creator_key: AutomaticSyncWindow(
                     start_at=window.start_at,
                     end_at=window.end_at,
-                    fallback_timezone=window.timezone,
+                    published_time=published_time,
                 )
                 for window in task.automatic_origin.windows
             }
@@ -168,6 +174,7 @@ class CoreTaskExecutor:
             summary = await SyncCoordinator(
                 client,
                 naming=project.naming,
+                published_time=published_time,
                 blocker_engine=BlockerEngine.from_specs(project.blockers),
                 creator_concurrency=config.job.creator_concurrency,
                 reporter=reporter,
@@ -177,6 +184,7 @@ class CoreTaskExecutor:
                     output=spec.output,
                     save_creator_indices=spec.save_creator_indices,
                     mix_posts=spec.mix_posts,
+                    download_file=spec.download_file,
                     start_time=spec.start_time,
                     end_time=spec.end_time,
                     offset=spec.offset,
@@ -200,7 +208,7 @@ class CoreTaskExecutor:
             ]
         )
         if not summary.successful:
-            creator_failures = sum(not result.successful for result in summary.creators)
+            creator_failures = sum(result.error is not None for result in summary.creators)
             items = [result.failure for result in summary.creators if result.failure is not None]
             items.extend(summary.downloads.failures)
             report = failure_report(

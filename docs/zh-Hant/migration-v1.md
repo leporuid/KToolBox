@@ -2,6 +2,15 @@
 
 KToolBox v1 是會破壞相容性的後端與程式庫 API 版本。
 
+## 建議遷移流程
+
+1. 備份舊設定與下載目錄。
+2. 在現有專案目錄中安裝並啟動 [WebUI](webui.md)。
+3. 在遷移對話框中逐項檢查偵測到的舊設定，再確認任何修改。
+4. 預覽目錄轉換，然後先執行一次小範圍同步，再啟用定時計畫或完整封存。
+
+WebUI 會建立備份、檢查衝突，並將設定遷移與選用的目錄轉換分開處理。下方詳細表格主要供指令碼與 Python 整合參考。
+
 ## 升級前
 
 1. 備份 `.env` 或 `prod.env` 檔案。
@@ -50,12 +59,16 @@ KTOOLBOX_DOWNLOADER__FILE_PATH_PREFIX=/data
 
 CLI 失敗現在使用處理程序狀態：`0` 成功、`1` 遠端/創作者/下載失敗、`2` 引數/設定失敗、`130` 中斷。JSON 與表格使用 stdout；進度與記錄使用 stderr。
 
-## 專案清單與忽略規則
+## 專案設定、創作者清單與忽略規則
 
-只有在需要可重複使用的清單或結構化忽略規則時才建立 `ktoolbox.toml`。缺少此檔案代表有效的空專案。
+`ktoolbox.toml` 現在統一保存專案預設下載目錄、命名格式、自動同步計畫、可重複使用的創作者清單及結構化忽略規則。缺少檔案時，CLI 仍可使用內建預設值啟動；WebUI 會在警告後建立最小專案檔案。
 
 ```toml
 schema_version = 5
+default_output = "downloads"
+
+[naming]
+sequential_filename = true
 
 [[creators]]
 service = "fanbox"
@@ -64,11 +77,13 @@ alias = "studio-a"
 enabled = true
 ```
 
+相對輸出路徑以專案目錄為基準解析。移動現有下載前請先閱讀[命名格式](naming.md)，並在確認創作者清單與輸出位置後再設定[自動同步](automatic-sync.md)。
+
 將非空的 `KTOOLBOX_JOB__KEYWORDS_EXCLUDE` 值移至全域 `field-match` 標題條件。舊設定仍會作為隱含忽略規則生效並顯示警告，但 KToolBox 不會改寫本機檔案。請參閱[設定指南](configuration/guide.md#post-blockers)。
 
 `KTOOLBOX_JOB__CREATOR_CONCURRENCY` 預設為 `4`，用於限制創作者生產者。現有的 `KTOOLBOX_JOB__COUNT` 繼續限制檔案工作者。
 
-## 可選 WebUI
+## 使用 WebUI 遷移
 
 v1 新增 HeroUI 面板；它不會遷移或重複使用歷史實驗性 `webui` 分支。安裝 `ktoolbox[webui]` 並選擇專案目錄。缺少 `ktoolbox.toml` 時會在警告後自動建立。未設定帳號時，每次啟動都會在終端機輸出 `admin` 使用者名稱和新隨機密碼；需要固定憑證時再設定單一帳號即可。
 

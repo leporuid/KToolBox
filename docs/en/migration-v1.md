@@ -2,6 +2,15 @@
 
 KToolBox v1 is a breaking backend and library-API release.
 
+## Recommended migration path
+
+1. Back up the old configuration and download directories.
+2. Install and start the [WebUI](webui.md) for the existing project directory.
+3. Review the detected legacy settings in the migration dialog before accepting any change.
+4. Preview directory conversion, then run one small synchronization before enabling schedules or a full archive.
+
+The WebUI creates backups, validates conflicts, and keeps configuration migration separate from optional directory conversion. The detailed tables below remain useful for scripts and Python integrations.
+
 ## Before upgrading
 
 1. Back up your `.env` or `prod.env` file.
@@ -50,12 +59,16 @@ Options are displayed as `--creator-id`, not Python-style underscores. Old under
 
 CLI failures now use process status: `0` success, `1` remote/creator/download failure, `2` argument/configuration failure, and `130` interruption. JSON and tables use stdout; progress and logs use stderr.
 
-## Project roster and blockers
+## Project settings, roster, and blockers
 
-Create `ktoolbox.toml` only when you need a reusable roster or structured blockers. A missing file is a valid empty project.
+`ktoolbox.toml` is now the project-level home for the default download directory, naming format, automatic sync plans, reusable creator roster, and structured blockers. The CLI can still start from built-in defaults when the file is absent; WebUI creates a minimal project file after a warning.
 
 ```toml
 schema_version = 5
+default_output = "downloads"
+
+[naming]
+sequential_filename = true
 
 [[creators]]
 service = "fanbox"
@@ -64,11 +77,13 @@ alias = "studio-a"
 enabled = true
 ```
 
+Relative output paths are resolved from the project directory. Review the [naming format](naming.md) before moving existing downloads, and use [automatic sync](automatic-sync.md) only after the roster and output location are correct.
+
 Move non-empty `KTOOLBOX_JOB__KEYWORDS_EXCLUDE` values to a global `field-match` title condition. The old setting remains active as an implicit blocker and warns, but KToolBox will not rewrite local files. See the [configuration guide](configuration/guide.md#post-blockers).
 
 `KTOOLBOX_JOB__CREATOR_CONCURRENCY` defaults to `4` and limits creator producers. Existing `KTOOLBOX_JOB__COUNT` continues to limit file workers.
 
-## Optional WebUI
+## Migrate with WebUI
 
 v1 adds a new HeroUI panel; it does not migrate or reuse the historical experimental `webui` branch. Install `ktoolbox[webui]` and select a project directory. A missing `ktoolbox.toml` is created automatically after a warning. If no account is configured, each launch prints an `admin` username and a new random password; configure a single account when stable credentials are required.
 

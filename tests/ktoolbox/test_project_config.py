@@ -120,6 +120,8 @@ def test_schema_v1_loads_with_project_naming_defaults(tmp_path: Path) -> None:
     assert configuration.schema_version == 5
     assert configuration.default_output == Path("downloads")
     assert configuration.naming.creator_dirname_format == "{creator_name} [{service}-{creator_id}]"
+    assert configuration.naming.post_dirname_format == "{title} [{post_id}]"
+    assert configuration.naming.sequential_filename is True
     assert configuration.naming.post_structure.attachments == Path("attachments")
     assert configuration.automatic_sync == []
 
@@ -159,6 +161,40 @@ def test_naming_configuration_validates_templates_and_paths() -> None:
         ProjectNamingConfiguration(group_by_month=True)
 
 
+@pytest.mark.parametrize("value", [".", "./", Path(".")])
+def test_attachment_directory_accepts_work_root_and_round_trips(tmp_path: Path, value: str | Path) -> None:
+    project = ProjectConfiguration.model_validate({"naming": {"post_structure": {"attachments": value}}})
+    store = ProjectConfigStore(tmp_path / "ktoolbox.toml")
+    store.save(project)
+
+    assert store.load().naming.post_structure.attachments == Path(".")
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        " ",
+        "..",
+        "../attachments",
+        r"..\attachments",
+        "/attachments",
+        r"\attachments",
+        r"C:\attachments",
+        r"C:attachments",
+    ],
+)
+def test_attachment_directory_still_rejects_empty_or_escaping_paths(value: str) -> None:
+    with pytest.raises(ValueError):
+        ProjectNamingConfiguration.model_validate({"post_structure": {"attachments": value}})
+
+
+@pytest.mark.parametrize("field", ["content", "external_links", "revisions"])
+def test_other_structure_paths_still_require_a_name(field: str) -> None:
+    with pytest.raises(ValueError, match="naming paths cannot be empty"):
+        ProjectNamingConfiguration.model_validate({"post_structure": {field: "./"}})
+
+
 def test_schema_v2_loads_with_automatic_sync_defaults(tmp_path: Path) -> None:
     path = tmp_path / "ktoolbox.toml"
     path.write_text("schema_version = 2\n", encoding="utf-8")
@@ -182,6 +218,7 @@ def test_automatic_sync_plan_round_trip_and_lifecycle(tmp_path: Path) -> None:
         options=AutomaticSyncOptions(
             output=Path("downloads"),
             save_creator_indices=True,
+            download_file=False,
             keywords={"illustration", "comic"},
         ),
     )
@@ -194,6 +231,7 @@ def test_automatic_sync_plan_round_trip_and_lifecycle(tmp_path: Path) -> None:
     assert 'timezone = "Asia/Shanghai"' in content
     assert "initial_start_date = 2026-07-01" in content
     assert 'output = "downloads"' in content
+    assert "download_file = false" in content
     assert store.load().automatic_sync == configuration.automatic_sync
 
     updated = plan.model_copy(

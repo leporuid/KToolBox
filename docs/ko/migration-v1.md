@@ -2,6 +2,15 @@
 
 KToolBox v1은 백엔드와 라이브러리 API에 호환되지 않는 변경을 포함하는 릴리스입니다.
 
+## 권장 마이그레이션 경로
+
+1. 이전 설정과 다운로드 디렉터리를 백업합니다.
+2. 기존 프로젝트 디렉터리에서 [WebUI](webui.md)를 설치하고 시작합니다.
+3. 마이그레이션 대화 상자에서 감지된 이전 설정을 항목별로 확인한 뒤 변경을 승인합니다.
+4. 디렉터리 변환을 미리 보고 일정이나 전체 보관을 활성화하기 전에 작은 동기화를 실행합니다.
+
+WebUI는 백업을 만들고 충돌을 검사하며 설정 마이그레이션과 선택적 디렉터리 변환을 분리합니다. 아래 상세 표는 주로 스크립트와 Python 통합을 위한 것입니다.
+
 ## 업그레이드 전
 
 1. `.env` 또는 `prod.env` 파일을 백업합니다.
@@ -50,12 +59,16 @@ KTOOLBOX_DOWNLOADER__FILE_PATH_PREFIX=/data
 
 CLI 실패는 프로세스 상태를 사용합니다. `0`은 성공, `1`은 원격/크리에이터/다운로드 실패, `2`는 인수/설정 실패, `130`은 중단입니다. JSON과 표는 stdout을, 진행률과 로그는 stderr를 사용합니다.
 
-## 프로젝트 목록과 제외 규칙
+## 프로젝트 설정, 크리에이터 목록, 제외 규칙
 
-재사용 가능한 목록이나 구조화된 제외 규칙이 필요한 경우에만 `ktoolbox.toml`을 만드세요. 파일이 없는 상태는 유효한 빈 프로젝트입니다.
+`ktoolbox.toml`은 프로젝트 기본 다운로드 디렉터리, 이름 형식, 자동 동기화 계획, 재사용 가능한 크리에이터 목록 및 구조화된 제외 규칙을 함께 저장합니다. 파일이 없어도 CLI는 기본값으로 시작할 수 있으며 WebUI는 경고 후 최소 프로젝트 파일을 만듭니다.
 
 ```toml
 schema_version = 5
+default_output = "downloads"
+
+[naming]
+sequential_filename = true
 
 [[creators]]
 service = "fanbox"
@@ -64,11 +77,13 @@ alias = "studio-a"
 enabled = true
 ```
 
+상대 출력 경로는 프로젝트 디렉터리를 기준으로 해석됩니다. 기존 다운로드를 옮기기 전에 [이름 형식](naming.md)을 확인하고 목록과 출력 위치가 올바른지 확인한 뒤 [자동 동기화](automatic-sync.md)를 설정하세요.
+
 비어 있지 않은 `KTOOLBOX_JOB__KEYWORDS_EXCLUDE` 값을 전역 `field-match` 제목 조건으로 옮기세요. 이전 설정은 암시적 제외 규칙으로 계속 작동하며 경고를 표시하지만 KToolBox는 로컬 파일을 다시 작성하지 않습니다. [설정 가이드](configuration/guide.md#post-blockers)를 참조하세요.
 
 `KTOOLBOX_JOB__CREATOR_CONCURRENCY`의 기본값은 `4`이며 크리에이터 생산자 수를 제한합니다. 기존 `KTOOLBOX_JOB__COUNT`는 파일 작업자 수를 계속 제한합니다.
 
-## 선택적 WebUI
+## WebUI로 마이그레이션
 
 v1은 새로운 HeroUI 패널을 추가하며 이전 실험적 `webui` 브랜치를 마이그레이션하거나 재사용하지 않습니다. `ktoolbox[webui]`를 설치하고 프로젝트를 선택하세요. `ktoolbox.toml`은 경고 후 자동 생성됩니다. 계정이 없으면 시작마다 `admin`과 새 무작위 암호를 출력하며, 고정 자격 증명이 필요할 때 단일 계정을 설정합니다.
 

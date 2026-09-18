@@ -3,12 +3,11 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from datetime import date, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from string import Formatter
 from tempfile import NamedTemporaryFile
 from typing import Annotated, Any, Literal
 from urllib.parse import urlparse
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import tomlkit
 from croniter import CroniterBadCronError, croniter
@@ -17,6 +16,7 @@ from tomlkit.items import AoT
 from tomlkit.toml_document import TOMLDocument
 
 from ktoolbox.blocker.model import BlockerSpec
+from ktoolbox.publication_time import validate_iana_timezone
 
 PROJECT_CONFIG_ENV = "KTOOLBOX_PROJECT_CONFIG"
 DEFAULT_PROJECT_CONFIG_PATH = Path("ktoolbox.toml")
@@ -109,10 +109,15 @@ def _validate_component_template(
     return value
 
 
-def _validate_relative_path(value: Path) -> Path:
-    if value.is_absolute() or ".." in value.parts:
+def _validate_relative_path(value: Path, *, allow_work_root: bool = False) -> Path:
+    raw_value = str(value)
+    posix_path = PurePosixPath(raw_value.replace("\\", "/"))
+    windows_path = PureWindowsPath(raw_value)
+    is_anchored = posix_path.is_absolute() or bool(windows_path.anchor)
+    escapes_parent = ".." in posix_path.parts or ".." in windows_path.parts
+    if is_anchored or escapes_parent:
         raise ValueError("naming paths must stay within their work directory")
-    if not value.parts or str(value) in {"", "."}:
+    if not str(value).strip() or (not value.parts and not allow_work_root):
         raise ValueError("naming paths cannot be empty")
     return value
 
@@ -128,7 +133,20 @@ class ProjectPostStructureConfiguration(BaseModel):
     file: str = "{id}_{}"
     revisions: Path = Path("revisions")
 
-    @field_validator("attachments", "content", "external_links", "revisions")
+    @field_validator("attachments", mode="before")
+    @classmethod
+    def reject_empty_attachment_path(cls, value: Any) -> Any:
+        # Path("") becomes Path("."), but only an explicit work-root value is valid.
+        if isinstance(value, str) and not value.strip():
+            raise ValueError("naming paths cannot be empty")
+        return value
+
+    @field_validator("attachments")
+    @classmethod
+    def validate_attachment_path(cls, value: Path) -> Path:
+        return _validate_relative_path(value, allow_work_root=True)
+
+    @field_validator("content", "external_links", "revisions")
     @classmethod
     def validate_relative_paths(cls, value: Path) -> Path:
         return _validate_relative_path(value)
@@ -149,11 +167,11 @@ class ProjectNamingConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     creator_dirname_format: str = "{creator_name} [{service}-{creator_id}]"
-    post_dirname_format: str = "{title}"
+    post_dirname_format: str = "{title} [{post_id}]"
     revision_dirname_format: str = "{revision_id}"
     post_structure: ProjectPostStructureConfiguration = Field(default_factory=ProjectPostStructureConfiguration)
     mix_posts: bool = False
-    sequential_filename: bool = False
+    sequential_filename: bool = True
     sequential_filename_excludes: set[str] = Field(default_factory=set)
     filename_format: str = "{}"
     group_by_year: bool = False
@@ -205,6 +223,7 @@ class AutomaticSyncOptions(BaseModel):
     output: Path | None = None
     save_creator_indices: bool = False
     mix_posts: bool | None = None
+    download_file: bool | None = None
     keywords: set[str] = Field(default_factory=set)
     keywords_exclude: set[str] = Field(default_factory=set)
 
@@ -233,11 +252,7 @@ class CronAutomaticSyncSchedule(BaseModel):
     @field_validator("timezone")
     @classmethod
     def validate_timezone(cls, value: str) -> str:
-        try:
-            ZoneInfo(value)
-        except (ZoneInfoNotFoundError, ValueError) as error:
-            raise ValueError(f"unknown IANA timezone: {value}") from error
-        return value
+        return validate_iana_timezone(value)
 
 
 class IntervalAutomaticSyncSchedule(BaseModel):

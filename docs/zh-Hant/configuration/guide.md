@@ -1,5 +1,8 @@
 # 設定指南
 
+!!! tip "在 WebUI 中編輯設定"
+    「全域設定」和「命名格式」頁面是修改設定最簡單的方式。只有需要手動檔案、環境變數或部署自動化時才需要本指南；一般設定請從 [WebUI 指南](../webui.md)開始。
+
 KToolBox 有兩層設定：
 
 - `.env`、`prod.env` 和處理程序變數控制 API、傳輸與全域下載行為。
@@ -24,9 +27,17 @@ KTOOLBOX_JOB__COUNT=4
 KTOOLBOX_JOB__CREATOR_CONCURRENCY=4
 KTOOLBOX_JOB__DOWNLOAD_FILE=True
 KTOOLBOX_JOB__DOWNLOAD_ATTACHMENTS=True
+
+# 發布時間正規化。
+KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__FALLBACK_SERVICE_TIMEZONE=UTC
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__FANBOX=Asia/Tokyo
+KTOOLBOX_PUBLISHED_TIME__SERVICE_TIMEZONES__PATREON=UTC
 ```
 
 所有設定均可省略。預設值請參閱[設定參考](reference.md)。
+
+建立新專案時，KToolBox 會偵測主機的 IANA 時區，且只在建立當下將 `KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE` 明文寫入 `.env`。既有專案即使缺少此設定，也不會在讀取設定或啟動 WebUI 時被自動修改，而會繼續使用模型預設值 `UTC`。自動同步計畫的時區只決定何時執行；此處的 Service 時區則決定如何解讀 Pawchive 的 `published`。
 
 ## 產生或編輯設定
 
@@ -43,7 +54,7 @@ pipx install "ktoolbox[urwid]" --force
 ktoolbox config edit
 ```
 
-可選的 [WebUI](../webui.md) 會透過型別化控制項顯示七種語言的標籤與說明，並提供最終值來源指示、機密遮蔽、dotenv/TOML 原文編輯、驗證、差異預覽和 ETag 衝突保護。英語設定 docstring 仍是欄位與語意來源，其餘語言目錄會接受完整欄位路徑檢查。
+建議使用的 [WebUI](../webui.md) 會透過型別化控制項顯示七種語言的標籤與說明，並提供最終值來源指示、機密遮蔽、dotenv/TOML 原文編輯、驗證、差異預覽和 ETag 衝突保護。英語設定 docstring 仍是欄位與語意來源，其餘語言目錄會接受完整欄位路徑檢查。
 
 記錄層級等固定選項顯示為 Select；具有建議值但仍允許自訂的欄位顯示為 ComboBox。路徑選擇器只用於真正的檔案或目錄位置，`attachments`、`external_links.txt` 等內部產物名稱維持一般文字欄位。
 

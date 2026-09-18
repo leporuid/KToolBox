@@ -1,6 +1,11 @@
 # Référence de configuration
 
+!!! note
+    Ceci est la référence bas niveau complète. Préférez les formulaires localisés de la [WebUI](../webui.md), sauf si vous avez précisément besoin de variables d'environnement ou de configuration générée.
+
 Les noms d'environnement commencent par `KTOOLBOX_` et relient les champs imbriqués du modèle avec `__`. Les types indiqués comme `path`, `set` ou `list` sont analysés par Pydantic ; utilisez des tableaux JSON pour les collections dans dotenv.
+
+Sur un écran étroit, faites défiler les tableaux horizontalement pour consulter toutes les colonnes.
 
 ## Racine
 
@@ -104,6 +109,14 @@ Le document de projet est distinct de la configuration d'environnement. Son chem
 | `options.rule` | groupe de conditions | requis pour `field-match` | Règle récursive racine. |
 
 Les groupes utilisent `kind = "group"`, `mode = "any"` ou `"all"`, une liste `conditions` non vide et un `negate` facultatif. Les conditions de champ utilisent `kind = "field"`, un `field` sûr à points, l'un de `contains`, `equals`, `regex` ou `exists`, et les options `case_sensitive`, `negate` ou `expected`. Les opérateurs autres que `exists` exigent une liste `values` non vide ; `exists` interdit `values`.
+
+## `published_time`
+
+| Champ | Type | Valeur par défaut | Description |
+| --- | --- | --- | --- |
+| `target_timezone` | fuseau IANA | `UTC` | Fuseau cible utilisé pour les noms, le classement, les filtres et la WebUI. |
+| `fallback_service_timezone` | fuseau IANA | `UTC` | Fuseau servant à interpréter `published` sans zone pour les Service non configurés. |
+| `service_timezones` | table | Fanbox Tokyo, Patreon UTC | Fuseaux IANA interprétant `published` sans zone pour chaque Service Pawchive. |
 
 ## `webui`
 

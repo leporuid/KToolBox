@@ -27,6 +27,7 @@ from ktoolbox.action.utils import (
     generate_revision_path_name,
 )
 from ktoolbox.api.generated import Post
+from ktoolbox.configuration import load_configuration
 from ktoolbox.job import CreatorIndices
 from ktoolbox.naming_migration import (
     LegacyNamingApplyResult,
@@ -40,6 +41,7 @@ from ktoolbox.project_config import (
     ProjectNamingConfiguration,
     resolve_project_output,
 )
+from ktoolbox.publication_time import PublishedTimePolicy
 from ktoolbox.webui.config_store import content_revision
 from ktoolbox.webui.database import WebUIDatabase, utc_now
 from ktoolbox.webui.event_store import WebUIEventStore
@@ -63,11 +65,14 @@ from ktoolbox.webui.naming_models import (
     NamingSourceWarningResponse,
     PastedConfigConversionSource,
     ProjectLayoutConversionSource,
+    PublishedTimePolicySnapshot,
     StartupNoticeResolution,
     StartupNoticeResponse,
 )
 from ktoolbox.webui.task_models import ACTIVE_TASK_STATUSES
 from ktoolbox.webui.task_store import TaskStore
+
+_LEGACY_PUBLISHED_TIME = PublishedTimePolicy.legacy_raw()
 
 
 class NamingConversionError(ValueError):
@@ -83,6 +88,13 @@ class _Move:
     creator_key: str
     source: Path
     target: Path
+
+
+@dataclass(frozen=True, slots=True)
+class _NamingLayout:
+    naming: ProjectNamingConfiguration
+    published_time: PublishedTimePolicy
+    mode: str = "normalized"
 
 
 @dataclass(slots=True)
@@ -119,6 +131,9 @@ class NamingConversionService:
         self._cancellations: dict[str, asyncio.Event] = {}
         self._pauses: dict[str, asyncio.Event] = {}
         self._apply_lock = asyncio.Lock()
+
+    def _current_published_time(self) -> PublishedTimePolicy:
+        return load_configuration(self.project_root).published_time.policy()
 
     async def start(self) -> None:
         await self._migrate_legacy_roots()
@@ -162,21 +177,26 @@ class NamingConversionService:
 
     async def configuration(self) -> NamingConfigurationResponse:
         project = self.project_store.load()
+        policy = self._current_published_time()
         return NamingConfigurationResponse(
             default_output=project.default_output,
             resolved_default_output=resolve_project_output(self.project_root, project),
             naming=project.naming,
+            published_time=_policy_snapshot(policy),
             revision=content_revision(self.project_store.load_text()),
             conversion_pending=await self.has_pending_layout(),
         )
 
     async def layout_versions(self) -> list[NamingLayoutVersionResponse]:
-        current_revision = _naming_revision(self.project_store.load().naming)
+        current_revision = _layout_revision(
+            self.project_store.load().naming,
+            self._current_published_time(),
+        )
         async with self.database.connect() as connection:
             connection.row_factory = aiosqlite.Row
             rows = await connection.execute_fetchall(
                 """
-                SELECT id, revision, naming_json, origin, created_at
+                SELECT id, revision, naming_json, published_time_json, origin, created_at
                 FROM naming_layout_versions
                 ORDER BY created_at DESC, id DESC
                 """
@@ -186,6 +206,7 @@ class NamingConversionService:
                 id=row["id"],
                 revision=row["revision"],
                 naming=ProjectNamingConfiguration.model_validate_json(row["naming_json"]),
+                published_time=_policy_snapshot_from_json(row["published_time_json"]),
                 origin=row["origin"],
                 created_at=row["created_at"],
                 is_current=row["revision"] == current_revision,
@@ -220,6 +241,7 @@ class NamingConversionService:
                 )
                 for difference in parsed.differences
             ],
+            default_published_time_mode="kemono_utc" if source_format == "env" else "pawchive_raw",
         )
 
     async def legacy_migration(self) -> LegacyNamingMigrationResponse:
@@ -361,7 +383,7 @@ class NamingConversionService:
                 raise NamingConversionError(f"old download location cannot be a symbolic link: {root}")
 
         sources = await self._resolve_conversion_sources(source)
-        candidate = project.naming
+        candidate = _NamingLayout(project.naming, self._current_published_time())
         resolves_pending = await self._source_resolves_pending_layout(
             source,
             candidate,
@@ -394,6 +416,7 @@ class NamingConversionService:
         preview = NamingPreviewResponse(
             id=preview_id,
             revision=revision,
+            target_layout_revision=_layout_revision(candidate.naming, candidate.published_time),
             fingerprint=fingerprint,
             roots=resolved_roots,
             creators=creators,
@@ -417,10 +440,10 @@ class NamingConversionService:
                 """,
                 (
                     preview_id,
-                    candidate.model_dump_json(),
+                    candidate.naming.model_dump_json(),
                     source.kind,
                     source.model_dump_json(),
-                    _naming_revision(candidate),
+                    _layout_revision(candidate.naming, candidate.published_time),
                     preview.model_dump_json(),
                     fingerprint,
                     NamingConversionProgress().model_dump_json(),
@@ -672,45 +695,83 @@ class NamingConversionService:
         create_prompt: bool = True,
         target_origin: NamingLayoutVersionOrigin = "project_change",
     ) -> None:
+        policy = self._current_published_time()
+        await self._record_layout_transition(
+            _NamingLayout(previous, policy),
+            _NamingLayout(target, policy),
+            create_prompt=create_prompt,
+            target_origin=target_origin,
+        )
+
+    async def record_published_time_change(
+        self,
+        previous: PublishedTimePolicy,
+        target: PublishedTimePolicy,
+    ) -> None:
+        if previous == target:
+            return
+        naming = self.project_store.load().naming
+        await self._record_layout_transition(
+            _NamingLayout(naming, previous),
+            _NamingLayout(naming, target),
+            create_prompt=_published_time_affects_paths(naming),
+        )
+
+    async def _record_layout_transition(
+        self,
+        previous: _NamingLayout,
+        target: _NamingLayout,
+        *,
+        create_prompt: bool,
+        target_origin: NamingLayoutVersionOrigin = "project_change",
+    ) -> None:
         now = utc_now().isoformat()
         async with self.database.connect() as connection:
             source_version_id = await self._store_layout_version(
                 connection,
-                previous,
+                previous.naming,
+                previous.published_time,
                 origin="project_change",
                 created_at=now,
             )
             target_version_id = await self._store_layout_version(
                 connection,
-                target,
+                target.naming,
+                target.published_time,
                 origin=target_origin,
                 created_at=now,
             )
             row = await (
-                await connection.execute("SELECT sources_json FROM naming_layout_state WHERE id = 1")
+                await connection.execute(
+                    "SELECT sources_json, source_published_time_json FROM naming_layout_state WHERE id = 1"
+                )
             ).fetchone()
-            sources = (
-                [ProjectNamingConfiguration.model_validate(item) for item in json.loads(str(row[0]))]
-                if row is not None
-                else []
-            )
-            if previous not in sources:
+            sources = _layout_sources_from_json(row[0], row[1]) if row is not None else []
+            previous_revision = _layout_revision(previous.naming, previous.published_time)
+            if not any(
+                _layout_revision(source.naming, source.published_time) == previous_revision for source in sources
+            ):
                 sources.append(previous)
             await connection.execute(
                 """
-                INSERT INTO naming_layout_state(id, sources_json, target_json, updated_at)
-                VALUES (1, ?, ?, ?)
+                INSERT INTO naming_layout_state(
+                    id, sources_json, target_json,
+                    source_published_time_json, target_published_time_json,
+                    updated_at
+                )
+                VALUES (1, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     sources_json = excluded.sources_json,
                     target_json = excluded.target_json,
+                    source_published_time_json = excluded.source_published_time_json,
+                    target_published_time_json = excluded.target_published_time_json,
                     updated_at = excluded.updated_at
                 """,
                 (
-                    json.dumps(
-                        [item.model_dump(mode="json") for item in sources],
-                        ensure_ascii=False,
-                    ),
-                    target.model_dump_json(),
+                    _layout_sources_json(sources),
+                    target.naming.model_dump_json(),
+                    _policy_json(previous.published_time, previous.mode),
+                    _policy_json(target.published_time, target.mode),
                     now,
                 ),
             )
@@ -738,8 +799,16 @@ class NamingConversionService:
                                 "version": version_id,
                                 "source_version_id": source_version_id,
                                 "target_version_id": target_version_id,
-                                "source": previous.model_dump(mode="json"),
-                                "target": target.model_dump(mode="json"),
+                                "source": previous.naming.model_dump(mode="json"),
+                                "target": target.naming.model_dump(mode="json"),
+                                "source_published_time": _policy_snapshot(
+                                    previous.published_time,
+                                    previous.mode,
+                                ).model_dump(mode="json"),
+                                "target_published_time": _policy_snapshot(
+                                    target.published_time,
+                                    target.mode,
+                                ).model_dump(mode="json"),
                             },
                             ensure_ascii=False,
                         ),
@@ -750,18 +819,31 @@ class NamingConversionService:
 
     async def _seed_layout_versions(self) -> None:
         current = self.project_store.load().naming
+        current_policy = self._current_published_time()
         now = utc_now().isoformat()
-        recovered: list[ProjectNamingConfiguration] = []
+        recovered: list[_NamingLayout] = []
         async with self.database.connect() as connection:
             connection.row_factory = aiosqlite.Row
             state = await (
-                await connection.execute("SELECT sources_json, target_json FROM naming_layout_state WHERE id = 1")
+                await connection.execute(
+                    "SELECT sources_json, target_json, source_published_time_json, "
+                    "target_published_time_json FROM naming_layout_state WHERE id = 1"
+                )
             ).fetchone()
             if state is not None:
                 recovered.extend(
-                    ProjectNamingConfiguration.model_validate(item) for item in json.loads(str(state["sources_json"]))
+                    _layout_sources_from_json(
+                        state["sources_json"],
+                        state["source_published_time_json"],
+                    )
                 )
-                recovered.append(ProjectNamingConfiguration.model_validate_json(str(state["target_json"])))
+                recovered.append(
+                    _NamingLayout(
+                        ProjectNamingConfiguration.model_validate_json(str(state["target_json"])),
+                        _policy_from_json(state["target_published_time_json"]),
+                        _policy_mode_from_json(state["target_published_time_json"]),
+                    )
+                )
             notices = await connection.execute_fetchall(
                 """
                 SELECT payload_json FROM startup_notices
@@ -771,23 +853,35 @@ class NamingConversionService:
             for notice in notices:
                 try:
                     payload = json.loads(str(notice["payload_json"]))
-                    recovered.extend(
-                        ProjectNamingConfiguration.model_validate(payload[key])
-                        for key in ("source", "target")
-                        if payload.get(key) is not None
-                    )
+                    for key in ("source", "target"):
+                        if payload.get(key) is None:
+                            continue
+                        policy_data = payload.get(f"{key}_published_time")
+                        recovered.append(
+                            _NamingLayout(
+                                ProjectNamingConfiguration.model_validate(payload[key]),
+                                _policy_from_snapshot(PublishedTimePolicySnapshot.model_validate(policy_data))
+                                if policy_data is not None
+                                else _LEGACY_PUBLISHED_TIME,
+                                str(policy_data.get("mode", "legacy_raw"))
+                                if isinstance(policy_data, dict)
+                                else "legacy_raw",
+                            )
+                        )
                 except (TypeError, ValueError):
                     continue
-            for naming in recovered:
+            for layout in recovered:
                 await self._store_layout_version(
                     connection,
-                    naming,
+                    layout.naming,
+                    layout.published_time,
                     origin="recovered",
                     created_at=now,
                 )
             await self._store_layout_version(
                 connection,
                 current,
+                current_policy,
                 origin="project_current",
                 created_at=now,
             )
@@ -797,22 +891,24 @@ class NamingConversionService:
         self,
         connection: aiosqlite.Connection,
         naming: ProjectNamingConfiguration,
+        published_time: PublishedTimePolicy,
         *,
         origin: NamingLayoutVersionOrigin,
         created_at: str,
     ) -> str:
-        revision = _naming_revision(naming)
+        revision = _layout_revision(naming, published_time)
         version_id = f"naming-layout-{revision[:24]}"
         await connection.execute(
             """
             INSERT OR IGNORE INTO naming_layout_versions(
-                id, revision, naming_json, origin, created_at
-            ) VALUES (?, ?, ?, ?, ?)
+                id, revision, naming_json, published_time_json, origin, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 version_id,
                 revision,
                 _canonical_naming_json(naming),
+                _policy_json(published_time),
                 origin,
                 created_at,
             ),
@@ -853,37 +949,54 @@ class NamingConversionService:
     async def _resolve_conversion_sources(
         self,
         source: NamingConversionSource,
-    ) -> list[ProjectNamingConfiguration]:
+    ) -> list[_NamingLayout]:
         if isinstance(source, PastedConfigConversionSource):
             if _naming_revision(source.naming) != source.digest:
                 raise NamingConversionError("pasted naming source changed after parsing; parse it again")
-            return [source.naming]
+            mode = source.published_time_mode or ("kemono_utc" if source.format == "env" else "pawchive_raw")
+            if mode == "custom":
+                if source.published_time is None:
+                    raise NamingConversionError("custom pasted time semantics require a publication time policy")
+                policy = _policy_from_snapshot(source.published_time)
+            else:
+                policy = _LEGACY_PUBLISHED_TIME
+            return [_NamingLayout(source.naming, policy, mode)]
         unique_ids = list(dict.fromkeys(source.version_ids))
         placeholders = ",".join("?" for _ in unique_ids)
         async with self.database.connect() as connection:
             connection.row_factory = aiosqlite.Row
             rows = await connection.execute_fetchall(
                 f"""
-                SELECT id, naming_json FROM naming_layout_versions
+                SELECT id, naming_json, published_time_json FROM naming_layout_versions
                 WHERE id IN ({placeholders})
                 """,
                 unique_ids,
             )
-        by_id = {str(row["id"]): str(row["naming_json"]) for row in rows}
+        by_id = {str(row["id"]): row for row in rows}
         if missing := [version_id for version_id in unique_ids if version_id not in by_id]:
             raise NamingConversionError("unknown project naming versions: " + ", ".join(missing))
-        return [ProjectNamingConfiguration.model_validate_json(by_id[version_id]) for version_id in unique_ids]
+        return [
+            _NamingLayout(
+                ProjectNamingConfiguration.model_validate_json(str(by_id[version_id]["naming_json"])),
+                _policy_from_json(by_id[version_id]["published_time_json"]),
+                _policy_mode_from_json(by_id[version_id]["published_time_json"]),
+            )
+            for version_id in unique_ids
+        ]
 
     async def _source_resolves_pending_layout(
         self,
         source: NamingConversionSource,
-        target: ProjectNamingConfiguration,
+        target: _NamingLayout,
     ) -> bool:
         if not isinstance(source, ProjectLayoutConversionSource):
             return False
         async with self.database.connect() as connection:
             state = await (
-                await connection.execute("SELECT sources_json, target_json FROM naming_layout_state WHERE id = 1")
+                await connection.execute(
+                    "SELECT sources_json, target_json, source_published_time_json, "
+                    "target_published_time_json FROM naming_layout_state WHERE id = 1"
+                )
             ).fetchone()
             if state is None:
                 return False
@@ -895,21 +1008,26 @@ class NamingConversionService:
                 source.version_ids,
             )
         pending_target = ProjectNamingConfiguration.model_validate_json(str(state[1]))
-        if pending_target != target:
+        pending_target_policy = _policy_from_json(state[3])
+        if pending_target != target.naming or pending_target_policy != target.published_time:
             return False
         pending_revisions = {
-            _naming_revision(ProjectNamingConfiguration.model_validate(item)) for item in json.loads(str(state[0]))
+            _layout_revision(layout.naming, layout.published_time)
+            for layout in _layout_sources_from_json(state[0], state[2])
         }
         return pending_revisions.issubset({str(row[0]) for row in selected_rows})
 
     async def _clear_layout_state(self, candidate: ProjectNamingConfiguration) -> None:
         async with self.database.connect() as connection:
             row = await (
-                await connection.execute("SELECT target_json FROM naming_layout_state WHERE id = 1")
+                await connection.execute(
+                    "SELECT target_json, target_published_time_json FROM naming_layout_state WHERE id = 1"
+                )
             ).fetchone()
             if row is not None:
                 target = ProjectNamingConfiguration.model_validate_json(str(row[0]))
-                if target != candidate:
+                target_policy = _policy_from_json(row[1])
+                if target != candidate or target_policy != self._current_published_time():
                     raise NamingPreviewStaleError("naming layout changed during conversion; create a new preview")
                 await connection.execute("DELETE FROM naming_layout_state WHERE id = 1")
                 await connection.commit()
@@ -1096,6 +1214,12 @@ class NamingConversionService:
     async def _ensure_preview_current(self, preview: NamingPreviewResponse) -> None:
         if content_revision(self.project_store.load_text()) != preview.revision:
             raise NamingPreviewStaleError("project configuration changed; create a new preview")
+        current_layout_revision = _layout_revision(
+            self.project_store.load().naming,
+            self._current_published_time(),
+        )
+        if preview.target_layout_revision and current_layout_revision != preview.target_layout_revision:
+            raise NamingPreviewStaleError("publication time configuration changed; create a new preview")
         fingerprint = await anyio.to_thread.run_sync(
             _filesystem_fingerprint,
             preview.roots,
@@ -1328,21 +1452,59 @@ def _validate_resume_filesystem(
             raise NamingPreviewStaleError(f"download location changed while conversion was paused: {root}")
         if shutil.disk_usage(root).free <= 0:
             raise NamingConversionError(f"download location has no free space: {root}")
+    if any(status not in {"completed", "planned"} for status, _, _ in operations):
+        raise NamingPreviewStaleError("conversion operation state changed while paused")
+
+    def relocated(path: Path, locations: dict[Path, Path | None]) -> Path | None:
+        for parent in (path, *path.parents):
+            if parent in locations:
+                location = locations[parent]
+                return location / path.relative_to(parent) if location is not None else None
+        return path
+
+    def unsafe(path: Path) -> bool:
+        root = next((root for root in roots if path.is_relative_to(root)), None)
+        return root is None or _has_symlink_component(path.relative_to(root), root)
+
+    # Journal paths describe their execution step, not necessarily the paused filesystem.
+    completed_locations: dict[Path, Path | None] = {}
+    for status, source, target in reversed(operations):
+        if status != "completed":
+            continue
+        disk_source = relocated(source, completed_locations)
+        disk_target = relocated(target, completed_locations)
+        if (
+            disk_source is None
+            or disk_target is None
+            or unsafe(disk_source)
+            or unsafe(disk_target)
+            or disk_source.exists()
+            or not disk_target.exists()
+        ):
+            raise NamingPreviewStaleError("completed conversion paths changed while paused")
+        completed_locations[source] = disk_target
+
+    planned_locations: dict[Path, Path | None] = {}
     for status, source, target in operations:
-        if status == "completed":
-            if source.exists() or not target.exists():
-                raise NamingPreviewStaleError("completed conversion paths changed while paused")
-        elif status == "planned":
-            if not source.exists() or target.exists():
-                raise NamingPreviewStaleError("pending conversion paths changed while paused")
-        else:
-            raise NamingPreviewStaleError("conversion operation state changed while paused")
+        if status != "planned":
+            continue
+        disk_source = relocated(source, planned_locations)
+        disk_target = relocated(target, planned_locations)
+        if (
+            disk_source is None
+            or unsafe(disk_source)
+            or not disk_source.exists()
+            or (disk_target is not None and (unsafe(disk_target) or disk_target.exists()))
+        ):
+            raise NamingPreviewStaleError("pending conversion paths changed while paused")
+        planned_locations[source] = None
+        planned_locations[target] = disk_source
 
 
 def _scan_download_roots(
     roots: list[Path],
-    sources: list[ProjectNamingConfiguration],
-    candidate: ProjectNamingConfiguration,
+    sources: list[_NamingLayout],
+    candidate: _NamingLayout,
 ) -> list[_CreatorScan]:
     scans: list[_CreatorScan] = []
     for root in roots:
@@ -1376,20 +1538,27 @@ def _scan_download_roots(
                 works,
                 sources,
             )
-            name = _creator_name(source_creator.name, service, creator_id, current)
+            name = _creator_name(source_creator.name, service, creator_id, current.naming)
             identity = f"{service}:{creator_id}"
             selection_key = f"{identity}@{hashlib.sha1(str(source_creator).encode()).hexdigest()[:10]}"
             target_creator = root / generate_creator_path_name(
                 service,
                 creator_id,
                 name,
-                candidate,
+                candidate.naming,
             )
             moves: list[_Move] = []
             conflicts: list[str] = []
             for source_work, post in works:
-                target_work = generate_grouped_post_path(post, target_creator, candidate) / generate_post_path_name(
-                    post, candidate
+                target_work = generate_grouped_post_path(
+                    post,
+                    target_creator,
+                    candidate.naming,
+                    candidate.published_time,
+                ) / generate_post_path_name(
+                    post,
+                    candidate.naming,
+                    candidate.published_time,
                 )
                 work_base = source_work
                 if source_work != target_work:
@@ -1443,7 +1612,7 @@ def _scan_download_roots(
                     if (
                         creator_identity := _creator_identity_from_directory(
                             source_creator,
-                            source,
+                            source.naming,
                         )
                     )
                     is not None
@@ -1452,14 +1621,14 @@ def _scan_download_roots(
             )
             if parsed is None:
                 continue
-            parsed_identity, current = parsed
+            parsed_identity, _current = parsed
             service, creator_id, name = parsed_identity
             selection_key = f"{service}:{creator_id}@{hashlib.sha1(str(source_creator).encode()).hexdigest()[:10]}"
             target_creator = root / generate_creator_path_name(
                 service,
                 creator_id,
                 name,
-                candidate,
+                candidate.naming,
             )
             fallback_moves: list[_Move] = []
             fallback_conflicts: list[str] = []
@@ -1490,7 +1659,7 @@ def _scan_download_roots(
 
 def _add_indexed_works(
     root: Path,
-    sources: list[ProjectNamingConfiguration],
+    sources: list[_NamingLayout],
     grouped: dict[tuple[str, str, Path], list[tuple[Path, Post]]],
     skipped_by_creator: dict[Path, int],
 ) -> None:
@@ -1516,10 +1685,15 @@ def _add_indexed_works(
                 (
                     path
                     for source in sources
-                    if not source.mix_posts
+                    if not source.naming.mix_posts
                     and (
-                        path := generate_grouped_post_path(post, creator, source)
-                        / generate_post_path_name(post, source)
+                        path := generate_grouped_post_path(
+                            post,
+                            creator,
+                            source.naming,
+                            source.published_time,
+                        )
+                        / generate_post_path_name(post, source.naming, source.published_time)
                     ).is_dir()
                     and not path.is_symlink()
                 ),
@@ -1540,17 +1714,19 @@ def _source_naming_for_creator(
     service: str,
     creator_id: str,
     works: list[tuple[Path, Post]],
-    sources: list[ProjectNamingConfiguration],
-) -> ProjectNamingConfiguration:
-    def score(source: ProjectNamingConfiguration) -> tuple[int, int]:
+    sources: list[_NamingLayout],
+) -> _NamingLayout:
+    def score(source: _NamingLayout) -> tuple[int, int]:
         matching_works = sum(
             1
             for work_path, post in works
-            if generate_grouped_post_path(post, creator, source) / generate_post_path_name(post, source) == work_path
+            if generate_grouped_post_path(post, creator, source.naming, source.published_time)
+            / generate_post_path_name(post, source.naming, source.published_time)
+            == work_path
         )
         identity = _creator_identity_from_template(
             creator.name,
-            source.creator_dirname_format,
+            source.naming.creator_dirname_format,
         )
         matching_creator = int(
             identity is not None
@@ -1642,8 +1818,10 @@ def _work_structure_moves(
     source_work: Path,
     work_base: Path,
     post: Post,
-    current: ProjectNamingConfiguration,
-    candidate: ProjectNamingConfiguration,
+    current: _NamingLayout,
+    candidate: _NamingLayout,
+    *,
+    include_revisions: bool = True,
 ) -> tuple[list[_Move], list[str]]:
     moves: list[_Move] = []
     conflicts: list[str] = []
@@ -1652,16 +1830,28 @@ def _work_structure_moves(
         if source_relative == target_relative:
             return
         original_source = source_work / source_relative
-        if not original_source.exists() or original_source.is_symlink():
+        if not original_source.exists() or _has_symlink_component(source_relative, source_work):
             return
         source = work_base / source_relative
         target = work_base / target_relative
         original_target = source_work / target_relative
-        if original_target.exists() and original_target != original_source:
+        if (
+            (original_target.exists() and original_target != original_source)
+            or _has_symlink_component(target_relative, source_work)
+            or any(
+                (source_work / parent).exists() and not (source_work / parent).is_dir()
+                for parent in target_relative.parents
+            )
+        ):
             conflicts.append(str(target))
         else:
             moves.append(_Move(creator_key, source, target))
 
+    protected_paths = {
+        Path(DataStorageNameEnum.PostData.value),
+        current.naming.post_structure.content,
+        current.naming.post_structure.external_links,
+    }
     primary = post.file
     if primary and primary.path:
         basic = (
@@ -1669,11 +1859,26 @@ def _work_structure_moves(
             if primary.name and is_valid_filename(primary.name)
             else Path(urlparse(primary.path).path)
         )
-        old_name = generate_filename(post, basic.name, current.post_structure.file)
-        new_name = generate_filename(post, basic.name, candidate.post_structure.file)
+        old_name = generate_filename(
+            post,
+            basic.name,
+            current.naming.post_structure.file,
+            current.published_time,
+        )
+        new_name = generate_filename(
+            post,
+            basic.name,
+            candidate.naming.post_structure.file,
+            candidate.published_time,
+        )
+        protected_paths.add(Path(old_name))
         add(Path(old_name), Path(new_name))
 
-    sequence = 1
+    old_directory = current.naming.post_structure.attachments
+    new_directory = candidate.naming.post_structure.attachments
+    # A work root is shared with metadata and covers; never move it as an attachment folder.
+    individual_attachments = Path(".") in (old_directory, new_directory)
+    old_sequence = new_sequence = 1
     for attachment in post.attachments or []:
         if not attachment.path:
             continue
@@ -1682,35 +1887,55 @@ def _work_structure_moves(
             if attachment.name and is_valid_filename(attachment.name)
             else Path(urlparse(attachment.path).path)
         )
-        old_basic, old_sequence = _attachment_basic_name(basic_path, current, sequence)
-        new_basic, new_sequence = _attachment_basic_name(basic_path, candidate, sequence)
-        old_name = generate_filename(post, old_basic, current.filename_format)
-        new_name = generate_filename(post, new_basic, candidate.filename_format)
-        add(
-            current.post_structure.attachments / old_name,
-            current.post_structure.attachments / new_name,
-        )
-        sequence = max(old_sequence, new_sequence)
+        old_basic, old_sequence = _attachment_basic_name(basic_path, current.naming, old_sequence)
+        new_basic, new_sequence = _attachment_basic_name(basic_path, candidate.naming, new_sequence)
+        old_name = generate_filename(post, old_basic, current.naming.filename_format, current.published_time)
+        new_name = generate_filename(post, new_basic, candidate.naming.filename_format, candidate.published_time)
+        source_relative = old_directory / old_name
+        target_relative = (new_directory if individual_attachments else old_directory) / new_name
+        if source_relative in protected_paths:
+            conflicts.append(str(work_base / source_relative))
+        elif (source_work / source_relative).is_file():
+            add(source_relative, target_relative)
 
-    revision_root = source_work / current.post_structure.revisions
-    if revision_root.is_dir() and not revision_root.is_symlink():
-        for metadata in revision_root.rglob(DataStorageNameEnum.PostData.value):
+    revision_root = source_work / current.naming.post_structure.revisions
+    if (
+        include_revisions
+        and revision_root.is_dir()
+        and not _has_symlink_component(current.naming.post_structure.revisions, source_work)
+    ):
+        for metadata in sorted(revision_root.glob(f"*/{DataStorageNameEnum.PostData.value}")):
             revision_source = metadata.parent
-            if revision_source.parent != revision_root:
+            if _has_symlink_component(metadata.relative_to(source_work), source_work):
                 continue
             try:
                 revision = Post.model_validate_json(metadata.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 continue
-            add(
-                current.post_structure.revisions / revision_source.name,
-                current.post_structure.revisions / generate_revision_path_name(revision, candidate),
+            revision_target = current.naming.post_structure.revisions / generate_revision_path_name(
+                revision,
+                candidate.naming,
+                candidate.published_time,
             )
+            add(current.naming.post_structure.revisions / revision_source.name, revision_target)
+            revision_moves, revision_conflicts = _work_structure_moves(
+                creator_key,
+                revision_source,
+                work_base / revision_target,
+                revision,
+                current,
+                candidate,
+                include_revisions=False,
+            )
+            moves.extend(revision_moves)
+            conflicts.extend(revision_conflicts)
 
-    add(current.post_structure.attachments, candidate.post_structure.attachments)
-    add(current.post_structure.content, candidate.post_structure.content)
-    add(current.post_structure.external_links, candidate.post_structure.external_links)
-    add(current.post_structure.revisions, candidate.post_structure.revisions)
+    if not individual_attachments:
+        add(old_directory, new_directory)
+    add(current.naming.post_structure.content, candidate.naming.post_structure.content)
+    add(current.naming.post_structure.external_links, candidate.naming.post_structure.external_links)
+    if include_revisions:
+        add(current.naming.post_structure.revisions, candidate.naming.post_structure.revisions)
     return moves, conflicts
 
 
@@ -1945,6 +2170,123 @@ def _canonical_naming_json(naming: ProjectNamingConfiguration) -> str:
 
 def _naming_revision(naming: ProjectNamingConfiguration) -> str:
     return hashlib.sha256(_canonical_naming_json(naming).encode("utf-8")).hexdigest()
+
+
+def _layout_revision(
+    naming: ProjectNamingConfiguration,
+    published_time: PublishedTimePolicy,
+) -> str:
+    payload = {
+        "naming": naming.model_dump(mode="json"),
+        "published_time": published_time.model_dump(),
+    }
+    canonical = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _policy_snapshot(
+    policy: PublishedTimePolicy,
+    mode: str = "normalized",
+) -> PublishedTimePolicySnapshot:
+    return PublishedTimePolicySnapshot(
+        mode=mode,
+        target_timezone=policy.target_timezone,
+        fallback_service_timezone=policy.fallback_service_timezone,
+        service_timezones=dict(policy.service_timezones),
+    )
+
+
+def _policy_snapshot_from_json(value: object) -> PublishedTimePolicySnapshot:
+    if value is None:
+        return _policy_snapshot(_LEGACY_PUBLISHED_TIME, "legacy_raw")
+    try:
+        data = json.loads(str(value))
+        if data.get("mode") in {"legacy_raw", "kemono_utc"}:
+            return _policy_snapshot(_LEGACY_PUBLISHED_TIME, str(data["mode"]))
+        return PublishedTimePolicySnapshot.model_validate(data)
+    except (TypeError, ValueError):
+        return _policy_snapshot(_LEGACY_PUBLISHED_TIME, "legacy_raw")
+
+
+def _policy_from_snapshot(snapshot: PublishedTimePolicySnapshot) -> PublishedTimePolicy:
+    if snapshot.mode in {"legacy_raw", "kemono_utc"}:
+        return _LEGACY_PUBLISHED_TIME
+    return PublishedTimePolicy.from_values(
+        target_timezone=snapshot.target_timezone,
+        fallback_service_timezone=snapshot.fallback_service_timezone,
+        service_timezones=snapshot.service_timezones,
+    )
+
+
+def _policy_from_json(value: object) -> PublishedTimePolicy:
+    return _policy_from_snapshot(_policy_snapshot_from_json(value))
+
+
+def _policy_mode_from_json(value: object) -> str:
+    return _policy_snapshot_from_json(value).mode
+
+
+def _policy_json(policy: PublishedTimePolicy, mode: str = "normalized") -> str:
+    return _policy_snapshot(policy, mode).model_dump_json()
+
+
+def _layout_sources_from_json(
+    value: object,
+    fallback_policy_value: object,
+) -> list[_NamingLayout]:
+    """Read composite layout sources while accepting the pre-policy state format."""
+
+    items = json.loads(str(value))
+    fallback_snapshot = _policy_snapshot_from_json(fallback_policy_value)
+    fallback_policy = _policy_from_snapshot(fallback_snapshot)
+    sources: list[_NamingLayout] = []
+    for item in items:
+        if isinstance(item, dict) and "naming" in item and "published_time" in item:
+            snapshot = PublishedTimePolicySnapshot.model_validate(item["published_time"])
+            sources.append(
+                _NamingLayout(
+                    ProjectNamingConfiguration.model_validate(item["naming"]),
+                    _policy_from_snapshot(snapshot),
+                    snapshot.mode,
+                )
+            )
+            continue
+        sources.append(
+            _NamingLayout(
+                ProjectNamingConfiguration.model_validate(item),
+                fallback_policy,
+                fallback_snapshot.mode,
+            )
+        )
+    return sources
+
+
+def _layout_sources_json(sources: list[_NamingLayout]) -> str:
+    return json.dumps(
+        [
+            {
+                "naming": source.naming.model_dump(mode="json"),
+                "published_time": _policy_snapshot(
+                    source.published_time,
+                    source.mode,
+                ).model_dump(mode="json"),
+            }
+            for source in sources
+        ],
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+
+
+def _published_time_affects_paths(naming: ProjectNamingConfiguration) -> bool:
+    templates = (
+        naming.post_dirname_format,
+        naming.revision_dirname_format,
+        naming.filename_format,
+        naming.post_structure.file,
+    )
+    return naming.group_by_year or naming.group_by_month or any("{published" in template for template in templates)
 
 
 def _legacy_migration_response(

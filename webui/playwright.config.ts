@@ -1,11 +1,13 @@
 import { defineConfig } from "@playwright/test";
 
 const e2ePort = process.env.KTOOLBOX_E2E_PORT ?? "8792";
-const e2ePython = process.env.KTOOLBOX_E2E_PYTHON ?? "poetry run python";
+const e2ePython = process.env.KTOOLBOX_E2E_PYTHON ?? "uv run --no-sync python";
 
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
+  // Every test exercises the same project-backed WebUI process and configuration files.
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",

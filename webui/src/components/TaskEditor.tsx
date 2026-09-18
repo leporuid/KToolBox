@@ -17,10 +17,12 @@ import {
   IconList as ListStart,
   IconListSearch as ListFilter,
   IconPlus as Plus,
+  IconPhoto as Photo,
   IconRefresh as RefreshCw,
   IconTags as Tags,
   IconToggleLeft as ToggleLeft,
   IconToggleRight as ToggleRight,
+  IconUserPlus as UserPlus,
   IconUsersGroup as UsersRound,
   IconX as X,
 } from "@tabler/icons-react";
@@ -28,10 +30,12 @@ import { useState, type FormEvent } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { parseDate, type DateValue } from "@internationalized/date";
 
-import type { CreatorRosterItem, DownloadTaskSpec, SyncTaskSpec, TaskRecord, TaskSpec } from "../types";
+import type { CreatorReference, CreatorRosterItem, DownloadTaskSpec, SyncTaskSpec, TaskRecord, TaskSpec } from "../types";
 import { TASK_OUTPUT_PATH_SELECTOR } from "../lib/pathSelectors";
 import { useRealtime } from "../lib/realtime";
 import { ExternalChangeAlert } from "./ExternalChangeAlert";
+import { CreatorEditorModal, type CreatorEditorRequest } from "./CreatorEditorModal";
+import { CreatorAvatar } from "./SensitiveMedia";
 import { RemotePathField } from "./RemotePathField";
 import {
   AddressText,
@@ -76,11 +80,23 @@ export function TaskEditor({
 
   const initialSync = initial?.kind === "sync" ? initial : undefined;
   const [allEnabled, setAllEnabled] = useState(!initialSync || initialSync.creators.length === 0);
+  const [additionalCreators, setAdditionalCreators] = useState<CreatorReference[]>(() =>
+    (initialSync?.creators ?? []).filter(
+      (candidate) =>
+        !creators.some(
+          (creator) =>
+            creator.service === candidate.service &&
+            creator.creator_id === candidate.creator_id,
+        ),
+    ),
+  );
   const [selectedCreators, setSelectedCreators] = useState(
     new Set((initialSync?.creators ?? []).map((creator) => `${creator.service}:${creator.creator_id}`)),
   );
+  const [creatorEditorRequest, setCreatorEditorRequest] = useState<CreatorEditorRequest | null>(null);
   const [saveIndices, setSaveIndices] = useState(initialSync?.save_creator_indices ?? false);
   const [mixPosts, setMixPosts] = useState(initialSync?.mix_posts === null || initialSync?.mix_posts === undefined ? "inherit" : String(initialSync.mix_posts));
+  const [syncDownloadFile, setSyncDownloadFile] = useState(initialSync?.download_file ?? true);
   const [offset, setOffset] = useState(initialSync?.offset ?? 0);
   const [length, setLength] = useState(initialSync?.length?.toString() ?? "");
   const [keywords, setKeywords] = useState(initialSync?.keywords ?? []);
@@ -101,6 +117,18 @@ export function TaskEditor({
   const [postId, setPostId] = useState(initialDownload?.post_id ?? "");
   const [revisionId, setRevisionId] = useState(initialDownload?.revision_id ?? "");
   const [dumpMetadata, setDumpMetadata] = useState(initialDownload?.dump_post_data ?? true);
+  const [postDownloadFile, setPostDownloadFile] = useState(initialDownload?.download_file ?? true);
+  const availableCreators = [
+    ...creators,
+    ...additionalCreators.filter(
+      (candidate) =>
+        !creators.some(
+          (creator) =>
+            creator.service === candidate.service &&
+            creator.creator_id === candidate.creator_id,
+        ),
+    ),
+  ];
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,11 +151,12 @@ export function TaskEditor({
         revision_id: revisionId.trim() || null,
         output,
         dump_post_data: dumpMetadata,
+        download_file: postDownloadFile,
       } satisfies DownloadTaskSpec;
     }
     const selected = allEnabled
       ? []
-      : creators
+      : availableCreators
           .filter((creator) =>
             selectedCreators.has(`${creator.service}:${creator.creator_id}`),
           )
@@ -143,6 +172,7 @@ export function TaskEditor({
       output,
       save_creator_indices: saveIndices,
       mix_posts: mixPosts === "inherit" ? null : mixPosts === "true",
+      download_file: syncDownloadFile,
       start_time: startUnlimited || !startDate ? null : `${startDate.toString()}T00:00:00`,
       end_time: endUnlimited || !endDate ? null : `${endDate.toString()}T23:59:59`,
       offset,
@@ -168,6 +198,14 @@ export function TaskEditor({
     });
   }
 
+  function addCreator(creator: CreatorReference) {
+    const key = `${creator.service}:${creator.creator_id}`;
+    if (!availableCreators.some((candidate) => `${candidate.service}:${candidate.creator_id}` === key)) {
+      setAdditionalCreators((current) => [...current, creator]);
+    }
+    setSelectedCreators((current) => new Set(current).add(key));
+  }
+
   const taskRevision = task ? (realtime?.taskDefinitionRevisions[task.id] ?? 0) : 0;
   const connectionRevision = realtime?.revisions.tasks ?? 0;
   const dirty = Boolean(task && JSON.stringify(buildSpec()) !== JSON.stringify(task.spec));
@@ -179,23 +217,27 @@ export function TaskEditor({
   );
 
   return (
-    <FormModal
-      actions={
-        <>
-          <Button variant="ghost" onPress={onClose}><X aria-hidden="true" size={17} />{t("common.cancel")}</Button>
-          <Button form="task-editor-form" isPending={saving} type="submit" variant="primary">
-            {task ? <Check aria-hidden="true" size={17} /> : <Plus aria-hidden="true" size={17} />}
-            {task ? t("common.save") : t("tasks.create")}
-          </Button>
-        </>
-      }
-      isWide
-      open
-      size="lg"
-      title={task ? t("tasks.edit") : t("tasks.create")}
-      onOpenChange={(open) => !open && onClose()}
-    >
-      <form className="grid gap-6" id="task-editor-form" onSubmit={submit}>
+    <>
+      <FormModal
+        actions={
+          <>
+            <Button variant="ghost" onPress={onClose}>
+              <X aria-hidden="true" size={17} />
+              {t("common.cancel")}
+            </Button>
+            <Button form="task-editor-form" isPending={saving} type="submit" variant="primary">
+              {task ? <Check aria-hidden="true" size={17} /> : <Plus aria-hidden="true" size={17} />}
+              {task ? t("common.save") : t("tasks.create")}
+            </Button>
+          </>
+        }
+        isWide
+        open
+        size="lg"
+        title={task ? t("tasks.edit") : t("tasks.create")}
+        onOpenChange={(open) => !open && onClose()}
+      >
+        <form className="grid gap-6" id="task-editor-form" onSubmit={submit}>
         <ExternalChangeAlert
           visible={externallyChanged}
           onKeepEditing={() => {
@@ -220,27 +262,54 @@ export function TaskEditor({
                 onChange={setAllEnabled}
               />
               {!allEnabled ? (
-                <Surface className="grid max-h-56 gap-1 overflow-y-auto rounded-lg border border-border p-3">
-                  {creators.map((creator) => {
-                    const key = `${creator.service}:${creator.creator_id}`;
-                    return (
-                      <FormCheckbox
-                        className="w-full"
-                        isSelected={selectedCreators.has(key)}
-                        key={key}
-                        label={
-                          <span className="flex min-w-0 items-center justify-between gap-3">
-                            <span className="min-w-0">
-                              <span className="block truncate text-sm font-medium">{creator.name || creator.creator_id}</span>
-                              <span className="block truncate text-xs text-muted">{key}</span>
+                <Surface className="overflow-hidden rounded-lg border border-border">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-[var(--surface-secondary)] px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{t("tasks.syncTargets")}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                        {t("tasks.creatorSelectionHint", { count: selectedCreators.size })}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onPress={() => setCreatorEditorRequest({ kind: "create" })}>
+                      <UserPlus aria-hidden="true" size={16} />
+                      {t("creators.add")}
+                    </Button>
+                  </div>
+                  <div className="grid max-h-56 gap-1 overflow-y-auto p-2">
+                    {availableCreators.length ? availableCreators.map((creator) => {
+                      const key = `${creator.service}:${creator.creator_id}`;
+                      return (
+                        <FormCheckbox
+                          className="w-full"
+                          isSelected={selectedCreators.has(key)}
+                          key={key}
+                          label={
+                            <span className="flex min-w-0 items-center gap-3">
+                              <CreatorAvatar
+                                asset={creatorAvatar(creator)}
+                                name={creatorDisplayName(creator)}
+                                size="xs"
+                              />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium">
+                                  {creatorDisplayName(creator)}
+                                </span>
+                                <span className="block truncate text-xs text-muted">{key}</span>
+                              </span>
+                              {!creator.enabled ? (
+                                <Chip className="shrink-0" size="sm" variant="soft">
+                                  {t("common.disabled")}
+                                </Chip>
+                              ) : null}
                             </span>
-                            {!creator.enabled ? <Chip className="shrink-0" size="sm" variant="soft">{t("common.disabled")}</Chip> : null}
-                          </span>
-                        }
-                        onChange={(selected) => toggleCreator(key, selected)}
-                      />
-                    );
-                  })}
+                          }
+                          onChange={(selected) => toggleCreator(key, selected)}
+                        />
+                      );
+                    }) : (
+                      <p className="px-2 py-5 text-center text-sm text-muted">{t("creators.empty")}</p>
+                    )}
+                  </div>
                 </Surface>
               ) : null}
             </section>
@@ -290,7 +359,10 @@ export function TaskEditor({
                 onChange={setMixPosts}
               />
             </div>
-            <FormSwitchField description={t("tasks.saveIndexHint")} icon={BookOpenCheck} isSelected={saveIndices} label={t("tasks.saveIndex")} onChange={setSaveIndices} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <FormSwitchField description={t("tasks.downloadPrimaryFileHint")} icon={Photo} isSelected={syncDownloadFile} label={t("tasks.downloadPrimaryFile")} onChange={setSyncDownloadFile} />
+              <FormSwitchField description={t("tasks.saveIndexHint")} icon={BookOpenCheck} isSelected={saveIndices} label={t("tasks.saveIndex")} onChange={setSaveIndices} />
+            </div>
             <section className="grid gap-4 border-t border-border pt-5">
               <div className="flex items-start gap-2">
                 <Filter aria-hidden="true" className="mt-0.5 shrink-0 text-accent" size={18} />
@@ -377,7 +449,10 @@ export function TaskEditor({
               value={revisionId}
               onChange={setRevisionId}
             />
-            <FormSwitchField description={t("tasks.dumpMetadataHint")} icon={FileJson} isSelected={dumpMetadata} label={t("tasks.dumpMetadata")} onChange={setDumpMetadata} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <FormSwitchField description={t("tasks.downloadPrimaryFileHint")} icon={Photo} isSelected={postDownloadFile} label={t("tasks.downloadPrimaryFile")} onChange={setPostDownloadFile} />
+              <FormSwitchField description={t("tasks.dumpMetadataHint")} icon={FileJson} isSelected={dumpMetadata} label={t("tasks.dumpMetadata")} onChange={setDumpMetadata} />
+            </div>
           </Tabs.Panel>
         </Tabs>
         <RemotePathField
@@ -389,8 +464,16 @@ export function TaskEditor({
           value={output}
           onChange={setOutput}
         />
-      </form>
-    </FormModal>
+        </form>
+      </FormModal>
+      {creatorEditorRequest ? (
+        <CreatorEditorModal
+          request={creatorEditorRequest}
+          onClose={() => setCreatorEditorRequest(null)}
+          onSaved={addCreator}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -405,4 +488,14 @@ function PanelIntroduction({ icon: Icon, text }: { icon: typeof RefreshCw; text:
 
 function taskDate(value: string | null | undefined): DateValue | null {
   return value ? parseDate(value.slice(0, 10)) : null;
+}
+
+function creatorDisplayName(creator: CreatorReference | CreatorRosterItem): string {
+  return "name" in creator && typeof creator.name === "string" && creator.name
+    ? creator.name
+    : creator.alias || creator.creator_id;
+}
+
+function creatorAvatar(creator: CreatorReference | CreatorRosterItem): CreatorRosterItem["avatar"] {
+  return (creator as CreatorRosterItem).avatar;
 }

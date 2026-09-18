@@ -125,6 +125,53 @@ test("authenticated shell is accessible in desktop and mobile themes", async ({ 
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
   const mobileScan = await new AxeBuilder({ page }).analyze();
   expect(mobileScan.violations).toEqual([]);
+
+  const navigationDrawer = page.getByRole("dialog", { name: "Navigation" });
+  await page.getByRole("button", { name: "Close navigation" }).click();
+  await expect(navigationDrawer).toBeHidden();
+  await page.setViewportSize({ width: 320, height: 700 });
+  const compactWorkbar = page.locator(".app-workbar-inner");
+  const compactHeaderItems = [
+    page.getByRole("button", { name: "Open navigation" }),
+    compactWorkbar.getByRole("heading", { name: "Overview", exact: true }),
+    compactWorkbar.getByRole("status", { name: /Publication target timezone: Asia\/Shanghai · UTC\+08:00/ }),
+    compactWorkbar.getByRole("button", { name: "Switch language" }),
+  ];
+  const compactHeaderBoxes = await Promise.all(compactHeaderItems.map((item) => item.boundingBox()));
+  expect(compactHeaderBoxes.every(Boolean)).toBe(true);
+  for (let left = 0; left < compactHeaderBoxes.length; left += 1) {
+    for (let right = left + 1; right < compactHeaderBoxes.length; right += 1) {
+      const a = compactHeaderBoxes[left]!;
+      const b = compactHeaderBoxes[right]!;
+      const overlap = a.x < b.x + b.width && a.x + a.width > b.x
+        && a.y < b.y + b.height && a.y + a.height > b.y;
+      expect(overlap).toBe(false);
+    }
+  }
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const compactDrawer = page.getByRole("dialog", { name: "Navigation" });
+  await expect(compactDrawer.getByRole("switch", { name: "NSFW mode is off" })).toBeVisible();
+  await expect(compactDrawer.getByRole("button", { name: "Trusted networks only" })).toBeVisible();
+});
+
+
+test("publication time uses the configured service and target timezones", async ({ page }) => {
+  await signIn(page);
+
+  await page.getByRole("link", { name: "Posts", exact: true }).click();
+  await page.getByRole("textbox", { name: "Creator ID" }).fill("demo-studio");
+  await page.getByRole("button", { name: "Search posts" }).click();
+  const resultRow = page.getByRole("row").filter({ hasText: "Fictional project study" });
+  await expect(resultRow).toContainText(/Jul 19, 2026.*11:30 PM/);
+
+  await resultRow.getByRole("button", { name: "Post details" }).click();
+  const details = page.getByRole("dialog", { name: "Fictional project study" });
+  await expect(details.getByText("2026-07-20T00:30:00", { exact: true })).toBeVisible();
+  await expect(details).toContainText(
+    "Raw publication time interpreted in Asia/Tokyo → Asia/Shanghai target time",
+  );
+  await details.getByText("Close", { exact: true }).click();
 });
 
 
@@ -488,12 +535,19 @@ test("remote path picker browses the server filesystem from nested forms", async
   await page.getByRole("button", { name: /Configuration section/ }).click();
   await page.getByRole("option", { name: "File downloads" }).click();
   const bucketBrowse = page.getByRole("button", { name: "Browse the remote computer for Storage bucket path" });
+  const bucketBrowseResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return response.ok() && response.request().method() === "GET" && url.pathname === "/api/v1/filesystem";
+  });
   await bucketBrowse.click();
+  const bucketBrowsePayload = await (await bucketBrowseResponse).json() as { suggested_name?: string | null };
   const hostPicker = page.getByRole("dialog", { name: "Storage bucket path" });
   await expect(hostPicker.getByText("Remote computer")).toBeVisible();
   const suggestedFolderDialog = page.getByRole("dialog", { name: "New folder" });
-  if (await suggestedFolderDialog.isVisible()) {
+  if (bucketBrowsePayload.suggested_name) {
+    await expect(suggestedFolderDialog).toBeVisible();
     await suggestedFolderDialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(suggestedFolderDialog).not.toBeVisible();
   }
   await hostPicker.getByRole("button", { name: /Quick location/ }).click();
   const homeOption = page.getByRole("option", { name: "Home" });
@@ -863,8 +917,13 @@ test("task form serializes one-sided dates and protects regular-expression comma
   await expect(noStartDate).not.toBeChecked();
   await taskDialog.getByRole("group", { name: "Publication date range" }).getByRole("button").click();
   const startCalendar = page.getByRole("application", { name: /Publication date range/ });
-  await expect(startCalendar.getByRole("heading")).toContainText("July 2026");
-  await startCalendar.getByRole("button", { name: "Friday, July 10, 2026" }).click();
+  const now = new Date();
+  const expectedStartDate = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+  await startCalendar.getByRole("button", { name: /^Today,/ }).click();
   await expect(noStartDate).not.toBeChecked();
   await expect(taskDialog.getByRole("checkbox", { name: "No end date" })).toBeChecked();
   await expect(startCalendar).not.toBeVisible();
@@ -874,6 +933,10 @@ test("task form serializes one-sided dates and protects regular-expression comma
   await keywords.pressSequentially("painting,painting，draft");
   await keywords.press("Enter");
   await taskDialog.getByRole("button", { name: "Remove draft" }).click();
+  const downloadPrimaryFile = taskDialog.getByRole("switch", { name: "Download primary file (cover)" });
+  await expect(downloadPrimaryFile).toBeChecked();
+  await taskDialog.getByText("Download primary file (cover)", { exact: true }).click();
+  await expect(downloadPrimaryFile).not.toBeChecked();
   await taskDialog.getByRole("textbox", { name: "Output directory" }).fill("dated-sync-output");
 
   const requestPromise = page.waitForRequest((request) => request.method() === "POST" && request.url().endsWith("/api/v1/tasks"));
@@ -882,9 +945,10 @@ test("task form serializes one-sided dates and protects regular-expression comma
   expect(createRequest.postDataJSON()).toMatchObject({
     spec: {
       kind: "sync",
-      start_time: "2026-07-10T00:00:00",
+      start_time: `${expectedStartDate}T00:00:00`,
       end_time: null,
       keywords: ["painting"],
+      download_file: false,
       output: "dated-sync-output",
     },
   });

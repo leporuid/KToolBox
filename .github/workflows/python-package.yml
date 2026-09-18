@@ -11,8 +11,10 @@ on:
       - ".github/actions/**"
       - ".github/workflows/python-package.yml"
       - "ktoolbox.spec"
+      - "scripts/check_webui_wheel.py"
+      - "scripts/smoke_test_executable.py"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
       - "example.env"
       - "README*.md"
       - "LICENSE"
@@ -24,8 +26,10 @@ on:
       - ".github/actions/**"
       - ".github/workflows/python-package.yml"
       - "ktoolbox.spec"
+      - "scripts/check_webui_wheel.py"
+      - "scripts/smoke_test_executable.py"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
       - "example.env"
       - "README*.md"
       - "LICENSE"
@@ -42,8 +46,14 @@ jobs:
         with:
           install-project: "false"
 
-      - name: Build package with Poetry
-        run: poetry build
+      - name: Check lockfile consistency
+        run: uv lock --check
+
+      - name: Build package with uv
+        run: uv build
+
+      - name: Verify wheel contains the production WebUI
+        run: uv run --no-sync python scripts/check_webui_wheel.py
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v7
@@ -54,71 +64,70 @@ jobs:
   create-executable:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           # Windows builds
           - os: windows-latest
             arch: x64
             python-arch: "x64"
+            python-version: "3.14"
+            install-event-loop: "true"
           - os: windows-latest
             arch: x86
             python-arch: "x86"
+            # Current native dependencies and winloop do not publish CPython 3.14 win32 wheels.
+            python-version: "3.13"
+            install-event-loop: "false"
           
           # macOS builds  
           - os: macos-latest
             arch: arm64
             python-arch: "arm64"
+            python-version: "3.14"
+            install-event-loop: "true"
           - os: macos-15-intel
             arch: x64
             python-arch: "x64"
+            python-version: "3.14"
+            install-event-loop: "true"
           
-          # Linux builds with QEMU support
+          # Linux builds
           - os: ubuntu-latest
             arch: x64
             python-arch: "x64"
-            qemu: false
-          - os: ubuntu-latest
+            python-version: "3.14"
+            install-event-loop: "true"
+          - os: ubuntu-24.04-arm
             arch: arm64
-            python-arch: "x64"
-            qemu: true
-            qemu-arch: aarch64
+            python-arch: "arm64"
+            python-version: "3.14"
+            install-event-loop: "true"
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU
-        if: matrix.qemu == true
-        uses: docker/setup-qemu-action@v4
-        with:
-          platforms: ${{ matrix.qemu-arch }}
-
       - name: Setup Python environment
-        if: matrix.qemu != true
         uses: ./.github/actions/setup-python
         with:
-          python-version: "3.14"
+          python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.python-arch }}
-          poetry-install-arguments: "--with pyinstaller --extras urwid --extras webui"
+          uv-sync-arguments: "--group pyinstaller --extra urwid --extra webui"
+          install-event-loop: ${{ matrix.install-event-loop }}
 
-      - name: Create Executable (Native)
-        if: matrix.qemu != true
+      - name: Check lockfile consistency
+        run: uv lock --check
+
+      - name: Create executable
         uses: ./.github/actions/pyinstaller
 
-      - name: Create Executable (QEMU)
-        if: matrix.qemu == true
-        run: |
-          # For QEMU builds, we need to build inside an emulated container
-          docker run --rm --platform linux/${{ matrix.qemu-arch }} \
-            -v ${{ github.workspace }}:/workspace \
-            -w /workspace \
-            python:3.13-slim-bullseye \
-            bash -c "
-              apt-get update && apt-get install -y git binutils &&
-              pip install poetry==2.4.1 &&
-              poetry install --with pyinstaller --extras urwid --extras webui --extras uvloop &&
-              poetry run pyinstaller ktoolbox.spec --distpath dist &&
-              cp README*.md example.env LICENSE dist/
-            "
+      - name: Smoke-test executable (Unix)
+        if: runner.os != 'Windows'
+        run: uv run --no-sync python scripts/smoke_test_executable.py dist/ktoolbox
+
+      - name: Smoke-test executable (Windows)
+        if: runner.os == 'Windows'
+        run: uv run --no-sync python scripts/smoke_test_executable.py dist/ktoolbox.exe
 
       - name: Upload Executable
         uses: actions/upload-artifact@v7

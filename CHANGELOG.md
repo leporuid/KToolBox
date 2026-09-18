@@ -1,6 +1,43 @@
+# Unreleased
+
+# KToolBox v1.1.0-beta.1
+
+This beta validates the first post-v1 migration fixes before the next stable release. It focuses on publication-time correctness, legacy attachment layouts, release reliability, and clearer WebUI-first documentation.
+
+## Added
+
+- Add a Service-aware publication-time policy with configurable IANA target, fallback, and per-Service timezones. Fanbox defaults to `Asia/Tokyo`, Patreon defaults to `UTC`, and custom Pawchive Services can be configured independently ([#390](https://github.com/Ljzd-PRO/KToolBox/issues/390)).
+- Expose effective publication timestamps and configured target timezones through CLI, WebUI, MCP, project summaries, and a compact localized WebUI app-bar indicator.
+- Persist the detected host IANA timezone as `KTOOLBOX_PUBLISHED_TIME__TARGET_TIMEZONE` only when a new project is created, with a deterministic `UTC` fallback.
+
+## Changed
+
+- Interpret timezone-less Pawchive `published` values in their configured Service timezone before converting them to the target timezone for naming, year/month grouping, filters, automatic synchronization, and directory conversion.
+- Include publication-time policies in immutable naming-layout snapshots so conversion previews can distinguish Kemono UTC layouts, legacy Pawchive raw timestamps, and current Service-aware layouts.
+- Make the WebUI the primary path in README and documentation guidance, while keeping concise CLI and Python API references available.
+- Package wheel, sdist, six standalone architecture archives, and `SHA256SUMS` through the tag-driven release workflow, preserving executable permissions and publishing the Python package explicitly.
+
+## Fixed
+
+- Restore `.` / `./` attachment-directory support in project naming, pasted ENV/TOML sources, and confirmed v0 configuration migration ([#389](https://github.com/Ljzd-PRO/KToolBox/issues/389)).
+- Convert flat legacy attachments individually, including recognized revision files, while preserving covers, metadata, and unrelated files. Source and target sequential counters remain independent, and unsafe or conflicting destinations are rejected.
+- Validate paused conversion journal paths across parent-directory renames so nested attachment conversions can resume or roll back safely.
+- Show work-root attachments beside the cover in WebUI directory previews, including configured sequential filenames.
+- Reject POSIX- and Windows-rooted naming paths consistently on every operating system.
+- Correct the Python requirement to support the full Python 3.14 series rather than only Python 3.14.0, and lock `windows-curses` 2.4.2 so Windows CPython 3.14 can install the optional terminal UI.
+- Update `uvloop` and `winloop` to their Python 3.14-compatible releases for standalone builds; Windows x86 executables embed Python 3.13 and use the standard `asyncio` loop because `winloop` does not publish 32-bit wheels.
+- Keep the WebUI authentication stack available on Windows x86 by selecting the latest compatible `cryptography` release that still publishes verified win32 wheels.
+- Preserve the original packaged-WebUI startup error when an executable exits early instead of masking it with a second read from a closed output pipe.
+- Correct seven-language migration and FAQ guidance for old root-level attachment layouts and publication-time changes.
+
+**Full Changelog**: https://github.com/Ljzd-PRO/KToolBox/compare/v1.0.0...v1.1.0-beta.1
+
 # KToolBox v1.0.0
 
 KToolBox v1 is a breaking release that moves the project to Pawchive as its only supported backend.
+
+> [!WARNING]
+> This first v1 release has not yet received sufficient real-world validation. Back up existing configuration and downloads, begin with a bounded task, and review the [release notes and migration checklist](RELEASE_NOTES.md) before upgrading.
 
 ## Breaking changes
 
@@ -26,6 +63,7 @@ KToolBox v1 is a breaking release that moves the project to Pawchive as its only
 - Add hidden compatibility aliases for the seven v0 command names with one deprecation warning per invocation.
 - Add project-level `ktoolbox.toml` with an enabled/disabled creator roster, aliases, comment-preserving atomic writes, path discovery, validation, and Urwid editor support.
 - Upgrade project configuration to Schema v5 with project-scoped naming, automatic-sync plans, a default output directory, and one path-generation contract shared by CLI and WebUI.
+- Enable sequential attachment filenames by default so opaque Pawchive storage names are saved and displayed as readable names such as `1.png`, `2.png`, and `3.png`.
 - Add extensible asynchronous post blockers with ordered global/creator scopes, recursive any/all rules, negation, safe nested field selectors, and contains/equals/regex/exists operations.
 - Add multi-creator synchronization with bounded concurrent producers, fair per-creator queue rotation, streaming startup, one shared client and download pool, partial-failure summaries, and stable creator directories.
 - Replace tqdm and the handwritten ANSI progress layer with Rich live progress, per-file and aggregate transfer speeds, Rich-aware logging, and deterministic plain output for non-TTY, `NO_COLOR`, and `--plain` environments.
@@ -35,6 +73,7 @@ KToolBox v1 is a breaking release that moves the project to Pawchive as its only
 - Retain resumable downloads, filters, progress reporting, metadata output, file-size limits, and optional hard-link bucket storage under the new models.
 - Preserve bounded structured creator and file failures across synchronization, download workers, CLI summaries, WebUI attempts, and task events.
 - Handle terminal interrupts and expected startup refusals at one global CLI boundary, with concise Loguru messages, stable exit codes, and no traceback or configuration input values.
+- Allow single-work downloads, manual creator synchronization, and automatic-sync plans to override whether primary files (covers) are downloaded; expose the same choice through `--download-file` and `--no-download-file` in the CLI.
 
 ## HeroUI WebUI
 
@@ -81,6 +120,8 @@ KToolBox v1 is a breaking release that moves the project to Pawchive as its only
 - Apply selected legacy moves as persistent background conversions with an operation journal, pause/continue validation, cancellation rollback, restart recovery, lifecycle events, and empty-source cleanup.
 - Detect legacy dotenv naming fields without mutating files at startup; after login, guide users through field-level comparison, explicit backed-up atomic migration, and a separate manually triggered directory scan.
 - Add project-scoped automatic synchronization plans with five-field Cron or fixed intervals, IANA time zones, future-run previews, pause and immediate-run controls, per-creator checkpoints, overlap-safe work deduplication, and privacy-preserving recent-update counts.
+- Allow sync tasks to create and automatically select project roster authors from the shared creator editor without leaving the task form.
+- Add an opt-in browser-local NSFW mode that keeps the default interface text-only, proxies authenticated Pawchive images through same-origin validation, and adds stable creator avatars, banners, work covers, paginated galleries, and keyboard-accessible viewing without affecting downloads.
 
 ## Testing and quality
 
@@ -91,6 +132,7 @@ KToolBox v1 is a breaking release that moves the project to Pawchive as its only
 - Add browser geometry checks and verified screenshots for single-frame tables, continuous modal actions, centered list switches, responsive tabs, readable task targets, and selected-only checkbox indicators.
 - Add an eight-page mobile visual matrix with route-ready capture conditions and validated horizontal/vertical six-slice review evidence.
 - Add Ruff, Mypy, warnings-as-errors, Python and TypeScript OpenAPI generation checks, Node 24 lockfile builds, wheel/PyInstaller asset checks, `compileall`, package builds, and strict seven-language documentation builds.
+- Build Linux ARM64 executables on a native GitHub runner, launch every standalone package's embedded WebUI during CI, and publish direct wheel/sdist downloads, six architecture archives, and SHA-256 checksums with dedicated release notes.
 
 ## Fixes
 
@@ -176,6 +218,7 @@ KToolBox v1 是一次不兼容升级，项目改为仅支持 Pawchive 后端。
 - 使用持久操作日志在后台执行选中的旧目录转换，支持暂停/继续校验、取消回滚、重启恢复、生命周期事件和空源目录清理。
 - 启动阶段只检测旧 dotenv 命名字段而不修改文件；登录后通过逐字段对比、明确确认的带备份原子迁移和独立的手动目录扫描引导用户完成升级。
 - 新增项目级自动同步计划，支持五段 Cron 或固定间隔、IANA 时区、未来执行预览、暂停与立即执行、按作者推进检查点、重叠窗口作品去重，以及不加载标题和媒体的最近更新统计。
+- 新增浏览器本地可选的 NSFW 模式：默认界面继续保持纯文本，经同源认证与图片校验代理加载 Pawchive 媒体，并提供稳定的作者头像、横幅、作品封面、分页画廊及键盘查看器，不影响实际下载行为。
 
 ## 测试与质量
 
@@ -186,6 +229,7 @@ KToolBox v1 是一次不兼容升级，项目改为仅支持 Pawchive 后端。
 - 新增浏览器几何检查与实拍截图，覆盖单层表格、连续弹窗操作栏、列表开关居中、响应式标签页、可读任务目标及仅在选中时显示的复选框标记。
 - 新增八页面移动端视觉矩阵、路由就绪后截图条件，以及通过校验的横纵六切片审查证据。
 - 加入 Ruff、Mypy、警告即错误、Python 与 TypeScript OpenAPI 生成一致性检查、Node 24 锁文件构建、wheel/PyInstaller 资源检查、`compileall`、包构建和七语言文档严格构建。
+- 使用 GitHub 原生 ARM64 runner 构建 Linux ARM64 独立程序，在 CI 中实际启动每个平台独立包内嵌的 WebUI，并随专用发布说明提供直接 wheel/sdist 下载、六个架构压缩包和 SHA-256 校验文件。
 
 ## 修复
 

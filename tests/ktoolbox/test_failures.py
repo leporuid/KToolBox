@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import errno
+from datetime import datetime
 
 import httpx
 import pytest
@@ -22,6 +23,7 @@ from ktoolbox.failures import (
     failure_report,
     generic_failure,
 )
+from ktoolbox.publication_time import PublishedTimeError
 
 
 class ResponseModel(BaseModel):
@@ -50,6 +52,22 @@ def test_response_validation_failure_exposes_only_safe_contract_details() -> Non
     assert failure.operation == "list_creator_posts"
     assert failure.fields == ["$.tags"]
     assert "private input" not in failure.model_dump_json()
+
+
+def test_invalid_service_wall_time_is_a_safe_compatibility_failure() -> None:
+    error = PublishedTimeError(
+        f"private timestamp {datetime(2026, 3, 8, 2, 30).isoformat()}",
+        service="fanbox",
+        timezone_name="America/New_York",
+    )
+
+    failure = classify_failure(error, stage=FailureStage.job_generation)
+
+    assert failure.code is FailureCode.response_incompatible
+    assert failure.operation == "normalize_published_time"
+    assert failure.fields == ["published"]
+    assert failure.retryable is False
+    assert "private timestamp" not in failure.model_dump_json()
 
 
 @pytest.mark.parametrize(
@@ -112,7 +130,9 @@ def test_http_result_generic_failure_and_report_are_bounded() -> None:
     report = failure_report([limited, missing, generic] * 40, creator_failures=1, file_failures=2)
 
     assert limited.code is FailureCode.rate_limited
-    assert missing.code is FailureCode.http_error
+    assert missing.code is FailureCode.resource_not_found
+    assert missing.retryable is False
+    assert missing.http_status == 404
     assert len(generic.message) == 500
     assert len(report.items) == 100
     assert report.summary == "Task finished with 1 creator failures and 2 file failures"

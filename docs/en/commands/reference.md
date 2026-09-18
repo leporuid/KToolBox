@@ -1,6 +1,11 @@
 # Command Reference
 
+!!! note
+    This is an advanced reference for CLI automation. Most users can create and manage the same work from the [WebUI](../webui.md).
+
 Run `ktoolbox COMMAND --help` for the authoritative Cyclopts help. Command and option names use hyphens; legacy underscore spellings are still parsed for hidden compatibility commands.
+
+On narrow screens, swipe tables horizontally to inspect every column.
 
 ## Global options
 
@@ -40,8 +45,9 @@ Provide a Pawchive post URL, or all of `--service`, `--creator-id`, and `--post-
 | `--creator-id` | string | omitted | Creator ID. |
 | `--post-id` | string | omitted | Post ID. |
 | `--revision-id` | string | omitted | Select this revision from the revision list. |
-| `-o`, `--output`, `--path` | path | `.` | Output root. |
+| `-o`, `--output`, `--path` | path | project default | Override the project download root for this task. |
 | `--dump-post-data` / `--no-dump-post-data` | boolean | enabled | Save validated metadata to `post.json`. |
+| `--download-file` / `--no-download-file` | boolean | environment config | Override downloading the primary file (cover) for this task. |
 
 `download` intentionally does not apply roster blockers.
 
@@ -53,9 +59,10 @@ Each `TARGET` may be a Pawchive creator URL, `service:id`, or roster alias. Expl
 | --- | --- | --- | --- |
 | `TARGET ...` | strings | enabled roster | Zero or more creators. |
 | `--service` + `--creator-id` | strings | omitted | Add one explicit creator; both are required together. |
-| `-o`, `--output`, `--path` | path | `.` | Output root. |
+| `-o`, `--output`, `--path` | path | project default | Override the project download root for this task. |
 | `--save-creator-indices` | boolean | disabled | Atomically save the creator index after successful production. |
 | `--mix-posts` / `--no-mix-posts` | boolean | environment config | Override `job.mix_posts`. |
+| `--download-file` / `--no-download-file` | boolean | environment config | Override downloading each work's primary file (cover). |
 | `--start-time`, `--start` | date | omitted | Inclusive publication lower bound, `YYYY-MM-DD`. |
 | `--end-time`, `--end` | date | omitted | Inclusive publication upper bound, `YYYY-MM-DD`. |
 | `--offset` | integer | `0` | First post index. |

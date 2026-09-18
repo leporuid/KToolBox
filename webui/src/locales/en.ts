@@ -1,5 +1,6 @@
 import { namingTranslations } from "./naming";
 import { automaticSyncTranslations } from "./automaticSync";
+import { sensitiveMediaTranslations } from "./sensitiveMedia";
 
 export const en = {
   "brand": "KToolBox",
@@ -126,7 +127,9 @@ export const en = {
     "primaryNavigation": "Primary navigation",
     "securityTitle": "Trusted networks only",
     "securityBody": "This session uses HTTP. Credentials and task data are not encrypted in transit.",
-    "securityAdvice": "Use HTTPS or bind the WebUI to 127.0.0.1 when the network is not fully trusted."
+    "securityAdvice": "Use HTTPS or bind the WebUI to 127.0.0.1 when the network is not fully trusted.",
+    "timezoneLabel": "Publication target timezone",
+    "timezoneDescription": "Published dates, naming templates, and date grouping use this configured target timezone."
   },
   "overview": {
     "eyebrow": "Project workspace",
@@ -145,7 +148,7 @@ export const en = {
   },
   "creators": {
     "title": "Creators",
-    "description": "Maintain the project roster and search Pawchive without loading any media.",
+    "description": "Maintain the project creator roster and search Pawchive profiles.",
     "add": "Add creator",
     "edit": "Edit creator",
     "search": "Search Pawchive",
@@ -203,7 +206,7 @@ export const en = {
       "title": "Title",
       "content": "Body text",
       "tags": "Tags",
-      "fileName": "Primary file name",
+      "fileName": "Primary file name (cover)",
       "attachmentName": "Attachment file name",
       "postId": "Post ID",
       "service": "Platform"
@@ -240,6 +243,7 @@ export const en = {
   },
   "naming": namingTranslations.en,
   "automaticSync": automaticSyncTranslations.en,
+  "sensitiveMedia": sensitiveMediaTranslations.en,
   "configuration": {
     "title": "Global configuration",
     "description": "Edit typed settings with documentation sourced from KToolBox configuration classes.",
@@ -274,6 +278,11 @@ export const en = {
     "changedLines": "Changed lines",
     "filePath": "File path",
     "file": "Configuration file",
+    "serviceName": "Service",
+    "serviceTimezone": "Service timezone",
+    "addServiceTimezone": "Add Service timezone",
+    "removeServiceTimezone": "Remove the timezone for {{service}}",
+    "noServiceTimezones": "No Service-specific timezones are configured.",
     "pendingCount": "{{count}} pending change",
     "pendingCount_other": "{{count}} pending changes"
   },
@@ -333,6 +342,9 @@ export const en = {
     "identityPathHint": "The segments follow Pawchive's <code>/platform/user/creator ID/post/post ID</code> URL structure.",
     "dumpMetadata": "Save post metadata",
     "dumpMetadataHint": "Write the post data to post.json inside the post directory.",
+    "downloadPrimaryFile": "Download primary file (cover)",
+    "downloadPrimaryFileHint": "Download the work's primary file, which is usually its cover image.",
+    "creatorSelectionHint": "{{count}} selected. Add creators without leaving this task form.",
     "saveIndex": "Save creator indices",
     "saveIndexHint": "Save the post-to-directory index after synchronization. Mixed post files do not generate an index.",
     "empty": "The task queue is empty",
@@ -370,6 +382,7 @@ export const en = {
       "failed": "Failed"
     },
     "eventDetails": {
+      "creatorWorkSummary": "{{creator}} · checked {{fetched}} works · accepted {{accepted}} · queued {{queued}} files · completed {{completed}} · existing {{existing}} · failed {{failed}}",
       "creatorSummary": "{{creator}} · queued {{queued}} · completed {{completed}} · existing {{existing}} · failed {{failed}}",
       "transferStarted": "{{file}} · {{creator}} · {{completed}} / {{total}}",
       "transferFinished": "{{file}} · {{creator}} · {{outcome}} · {{completed}} / {{total}} · {{duration}} · {{speed}}"
@@ -417,6 +430,8 @@ export const en = {
       "creatorGroup": "Creators",
       "fileGroup": "Files",
       "otherGroup": "Other steps",
+      "showMoreFiles": "Show {{count}} more file details",
+      "collapseFiles": "Collapse file details",
       "moreFiles": "{{count}} more file failures are hidden.",
       "retryable": "Retry may succeed",
       "notRetryable": "Action required",
@@ -432,6 +447,7 @@ export const en = {
         "disk_full": "There is not enough free disk space.",
         "download_failed": "The file could not be downloaded.",
         "resource_not_found": "The requested creator, post, or file was not found.",
+        "resource_not_found_file": "The file is missing from the Pawchive file host.",
         "unknown": "An unexpected error stopped this operation."
       },
       "stages": {
@@ -451,7 +467,8 @@ export const en = {
         "response_incompatible": "Update KToolBox. If it is current, report the operation and field path.",
         "permission_denied": "Choose a writable output directory or correct its permissions.",
         "disk_full": "Free disk space or select another output directory.",
-        "resource_not_found": "Verify the platform and IDs before retrying."
+        "resource_not_found": "Verify the platform and IDs before retrying.",
+        "resource_not_found_file": "The upstream file is unavailable. Retry later or leave this file skipped."
       }
     },
     "events": {
@@ -484,7 +501,7 @@ export const en = {
   },
   "posts": {
     "title": "Posts",
-    "description": "Search typed Pawchive metadata and create download tasks without automatically loading remote media.",
+    "description": "Search typed Pawchive metadata and create download tasks; image previews follow the NSFW mode.",
     "search": "Search posts",
     "creatorId": "Creator ID",
     "postId": "Post ID",
@@ -497,6 +514,9 @@ export const en = {
     "empty": "No posts found",
     "post": "Post",
     "published": "Published",
+    "effectivePublished": "Effective publication time",
+    "rawPublished": "Pawchive original value",
+    "publicationConversion": "Raw publication time interpreted in {{serviceTimezone}} → {{targetTimezone}} target time",
     "details": "Post details",
     "contentHidden": "Post body is collapsed by default",
     "showContent": "Show body text",
@@ -733,6 +753,7 @@ export const en = {
     "disabled": "Disabled",
     "search": "Search",
     "refresh": "Refresh",
+    "loadMore": "Load more",
     "confirm": "Confirm",
     "undo": "Undo",
     "back": "Back",

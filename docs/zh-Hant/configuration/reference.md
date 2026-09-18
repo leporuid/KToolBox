@@ -1,6 +1,11 @@
 # 設定參考
 
+!!! note
+    本頁是完整的底層參考。除非明確需要環境變數或產生設定，否則建議使用 [WebUI](../webui.md) 中的本地化表單。
+
 環境變數名稱以 `KTOOLBOX_` 開頭，並以 `__` 連接巢狀模型欄位。顯示為 `path`、`set` 或 `list` 的型別由 Pydantic 解析；dotenv 檔案中的集合請使用 JSON 陣列。
+
+在窄螢幕裝置上，可水平滑動表格以查看所有欄位。
 
 ## 根層級
 
@@ -104,6 +109,14 @@ API 群組刻意不包含工作階段金鑰。
 | `options.rule` | 條件群組 | `field-match` 必填 | 根遞迴規則。 |
 
 條件群組使用 `kind = "group"`、`mode = "any"` 或 `"all"`、非空 `conditions` 清單，以及可選的 `negate`。欄位條件使用 `kind = "field"`、安全的點分 `field`、`contains`、`equals`、`regex` 或 `exists` 之一，以及可選的 `case_sensitive`、`negate` 或 `expected`。非 `exists` 運算子需要非空 `values` 清單；`exists` 禁止 `values`。
+
+## `published_time`
+
+| 欄位 | 型別 | 預設值 | 說明 |
+| --- | --- | --- | --- |
+| `target_timezone` | IANA 時區 | `UTC` | 命名、分組、篩選和 WebUI 顯示使用的目標時區。 |
+| `fallback_service_timezone` | IANA 時區 | `UTC` | Service 沒有單獨設定時，用來解釋無時區 `published` 的時區。 |
+| `service_timezones` | 對應表 | Fanbox 東京、Patreon UTC | 按 Pawchive Service 解釋無時區 `published` 的 IANA 時區。 |
 
 ## `webui`
 

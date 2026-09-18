@@ -1,6 +1,11 @@
 # Configuration Reference
 
+!!! note
+    This is the complete low-level reference. Prefer the localized forms in [WebUI](../webui.md) unless you specifically need environment variables or generated configuration.
+
 Environment names start with `KTOOLBOX_` and join nested model fields with `__`. Types shown as `path`, `set`, or `list` are parsed by Pydantic; use JSON arrays for collections in dotenv files.
+
+On narrow screens, swipe tables horizontally to inspect every column.
 
 ## Root
 
@@ -104,6 +109,14 @@ The project document is separate from environment configuration. Its path resolv
 | `options.rule` | condition group | required for `field-match` | Root recursive rule. |
 
 Condition groups use `kind = "group"`, `mode = "any"` or `"all"`, a non-empty `conditions` list, and optional `negate`. Field conditions use `kind = "field"`, a safe dotted `field`, one of `contains`, `equals`, `regex`, or `exists`, and optional `case_sensitive`, `negate`, or `expected`. Non-`exists` operators require a non-empty `values` list; `exists` forbids `values`.
+
+## `published_time`
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `target_timezone` | IANA timezone | `UTC` | Target timezone used for naming, grouping, filters, and WebUI display. |
+| `fallback_service_timezone` | IANA timezone | `UTC` | Timezone used to interpret naive `published` values for a Service without an explicit mapping. |
+| `service_timezones` | mapping | Fanbox Tokyo, Patreon UTC | IANA timezones used to interpret naive `published` values by Pawchive Service. |
 
 ## `webui`
 

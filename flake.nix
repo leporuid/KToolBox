@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
     flake-utils.url = "github:numtide/flake-utils";
 
     pyproject-nix = {
@@ -27,7 +26,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       flake-utils,
       uv2nix,
@@ -38,12 +36,7 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-        };
-
-        # Python 3.11 is within the project's supported range:
-        # >=3.10,<3.15.
+        pkgs = import nixpkgs { inherit system; };
         python = pkgs.python311;
 
         workspace = uv2nix.lib.workspace.loadWorkspace {
@@ -51,8 +44,6 @@
         };
 
         uvLockedOverlay = workspace.mkPyprojectOverlay {
-          # Prefer wheels where available. This keeps builds faster and
-          # avoids unnecessary native compilation.
           sourcePreference = "wheel";
         };
 
@@ -60,33 +51,19 @@
           (pkgs.callPackage pyproject-nix.build.packages {
             inherit python;
           }).overrideScope
-            (
-              pkgs.lib.composeManyExtensions [
-                pyproject-build-systems.overlays.default
-                uvLockedOverlay
-              ]
-            );
+            (pkgs.lib.composeManyExtensions [
+              pyproject-build-systems.overlays.default
+              uvLockedOverlay
+            ]);
 
-        # Runtime environment:
-        # - webui enables the WebUI dependencies
-        # - urwid enables the terminal configuration editor
         ktoolboxApp = pythonSet.mkVirtualEnv "ktoolbox-app" {
-          ktoolbox = [
-            "webui"
-            "urwid"
-          ];
+          ktoolbox = [ "webui" "urwid" ];
         };
 
-        # Development environment:
-        # workspace.deps.all includes all optional dependencies and all
-        # dependency groups declared by the project.
         ktoolboxDevEnv = pythonSet.mkVirtualEnv "ktoolbox-dev-env" (
           workspace.deps.all
           // {
-            ktoolbox = [
-              "webui"
-              "urwid"
-            ];
+            ktoolbox = [ "webui" "urwid" ];
           }
         );
       in
@@ -105,18 +82,12 @@
           ];
 
           env = {
-            # uv2nix owns the environment in this shell.
             UV_NO_SYNC = "1";
-
-            # Use the Nix-provided interpreter rather than allowing uv to
-            # download another Python interpreter.
             UV_PYTHON = python.interpreter;
-
             UV_PYTHON_DOWNLOADS = "never";
           };
 
           shellHook = ''
-            # Avoid PYTHONPATH pollution from Nix Python builders.
             unset PYTHONPATH
           '';
         };
