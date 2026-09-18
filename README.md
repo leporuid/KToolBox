@@ -87,13 +87,22 @@ Back up `.env`, `prod.env`, and existing downloads before upgrading. WebUI detec
 ## Development
 
 ```bash
-poetry install --with test,docs,dev
-poetry run pytest --cov
-poetry run mkdocs build --strict
+uv sync --all-groups --extra webui --extra urwid
+uv run pytest --cov
+uv run mkdocs build --strict
 cd webui && npm ci && npm run test && npm run build
 ```
 
 Default tests are offline and must not contact Pawchive or any other remote service.
+
+### Nix / uv2nix
+
+```bash
+nix develop
+nix build
+nix run
+nix flake check
+```
 
 ## License
 

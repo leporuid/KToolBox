@@ -11,13 +11,13 @@ inputs:
     required: false
     default: "x64"
   install-project:
-    description: Install the project and dependency groups with Poetry
+    description: Install the project and dependency groups with uv
     required: false
     default: "true"
-  poetry-install-arguments:
-    description: Arguments passed to poetry install
+  uv-sync-arguments:
+    description: Arguments passed to uv sync
     required: false
-    default: "--with test,docs,dev --extras urwid --extras webui"
+    default: "--all-groups --extra urwid --extra webui"
   install-event-loop:
     description: Install the platform-specific optional event loop
     required: false
@@ -26,25 +26,25 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install Poetry
-      run: pipx install poetry==2.4.1
+    - name: Install uv
+      run: pipx install uv
       shell: bash
 
     - uses: actions/setup-python@v6
       with:
         python-version: ${{ inputs.python-version }}
         architecture: ${{ inputs.architecture }}
-        cache: "poetry"
+        cache: "pip"
 
     - name: Install project dependencies
       if: inputs.install-project == 'true' && inputs.install-event-loop != 'true'
-      run: poetry install ${{ inputs.poetry-install-arguments }}
+      run: uv sync ${{ inputs.uv-sync-arguments }}
       shell: bash
 
     - name: Install project dependencies with optimized event loop
       if: inputs.install-project == 'true' && inputs.install-event-loop == 'true'
       run: >-
-        poetry install
-        ${{ inputs.poetry-install-arguments }}
-        --extras ${{ runner.os == 'Windows' && 'winloop' || 'uvloop' }}
+        uv sync
+        ${{ inputs.uv-sync-arguments }}
+        --extra ${{ runner.os == 'Windows' && 'winloop' || 'uvloop' }}
       shell: bash

@@ -14,7 +14,7 @@ on:
       - "scripts/check_webui_wheel.py"
       - "scripts/smoke_test_executable.py"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
       - "example.env"
       - "README*.md"
       - "LICENSE"
@@ -29,7 +29,7 @@ on:
       - "scripts/check_webui_wheel.py"
       - "scripts/smoke_test_executable.py"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
       - "example.env"
       - "README*.md"
       - "LICENSE"
@@ -46,11 +46,14 @@ jobs:
         with:
           install-project: "false"
 
-      - name: Build package with Poetry
-        run: poetry build
+      - name: Check lockfile consistency
+        run: uv lock --check
+
+      - name: Build package with uv
+        run: uv build
 
       - name: Verify wheel contains the production WebUI
-        run: poetry run python scripts/check_webui_wheel.py
+        run: uv run --no-sync python scripts/check_webui_wheel.py
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v7
@@ -109,19 +112,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.python-arch }}
-          poetry-install-arguments: "--with pyinstaller --extras urwid --extras webui"
+          uv-sync-arguments: "--group pyinstaller --extra urwid --extra webui"
           install-event-loop: ${{ matrix.install-event-loop }}
+
+      - name: Check lockfile consistency
+        run: uv lock --check
 
       - name: Create executable
         uses: ./.github/actions/pyinstaller
 
       - name: Smoke-test executable (Unix)
         if: runner.os != 'Windows'
-        run: poetry run python scripts/smoke_test_executable.py dist/ktoolbox
+        run: uv run --no-sync python scripts/smoke_test_executable.py dist/ktoolbox
 
       - name: Smoke-test executable (Windows)
         if: runner.os == 'Windows'
-        run: poetry run python scripts/smoke_test_executable.py dist/ktoolbox.exe
+        run: uv run --no-sync python scripts/smoke_test_executable.py dist/ktoolbox.exe
 
       - name: Upload Executable
         uses: actions/upload-artifact@v7

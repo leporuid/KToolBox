@@ -11,9 +11,9 @@ build:
   tools:
     python: "3.11"
   commands:
-    - pip install poetry
-    - poetry install --with docs
-    - poetry run mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml
+    - pip install uv
+    - uv sync --group docs --extra webui
+    - uv run --no-sync mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml
 
 mkdocs:
   configuration: mkdocs.yml

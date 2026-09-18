@@ -23,18 +23,24 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Check lockfile consistency
+        run: uv lock --check
+
+      - name: Verify development environment sync
+        run: uv sync --locked --all-groups --extra webui --extra urwid
+
       - name: Validate package metadata
-        run: poetry check
+        run: uv build
 
       - name: Validate normalized OpenAPI contract
-        run: poetry run openapi-spec-validator k_generator/pawchive_openapi.normalized.json
+        run: uv run --no-sync openapi-spec-validator k_generator/pawchive_openapi.normalized.json
 
       - name: Check generated API artifacts
-        run: poetry run python -m k_generator.main --check
+        run: uv run --no-sync python -m k_generator.main --check
 
       - name: Lint contract tooling
         run: >-
-          poetry run ruff check
+          uv run --no-sync ruff check
           scripts
           k_generator
           ktoolbox/api
@@ -60,7 +66,7 @@ jobs:
 
       - name: Check contract tooling formatting
         run: >-
-          poetry run ruff format --check
+          uv run --no-sync ruff format --check
           scripts
           k_generator
           ktoolbox/api
@@ -86,7 +92,7 @@ jobs:
 
       - name: Type-check Pawchive client
         run: >-
-          poetry run mypy --strict
+          uv run --no-sync mypy --strict
           ktoolbox/api/client.py
           ktoolbox/api/errors.py
           ktoolbox/api/parameters.py
@@ -106,7 +112,7 @@ jobs:
 
       - name: Type-check WebUI services and contract tooling
         run: >-
-          poetry run mypy
+          uv run --no-sync mypy
           ktoolbox/webui
           scripts/export_webui_openapi.py
           scripts/check_webui_wheel.py
@@ -114,11 +120,11 @@ jobs:
           tests/webui_e2e_server.py
 
       - name: Compile Python sources
-        run: poetry run python -m compileall -q ktoolbox k_generator
+        run: uv run --no-sync python -m compileall -q ktoolbox k_generator
 
       - name: Test Pawchive API layer at 100% coverage
         run: >-
-          poetry run pytest
+          uv run --no-sync pytest
           tests/ktoolbox/test_api_client.py
           tests/ktoolbox/test_api_contract.py
           tests/ktoolbox/test_api_utils.py
@@ -131,7 +137,7 @@ jobs:
 
       - name: Test synchronization core at 100% coverage
         run: >-
-          poetry run pytest
+          uv run --no-sync pytest
           tests/ktoolbox/test_blocker.py
           tests/ktoolbox/test_job_stream.py
           tests/ktoolbox/test_reporting.py
@@ -147,7 +153,7 @@ jobs:
 
       - name: Test WebUI security configuration and scheduler at 100% coverage
         run: >-
-          poetry run pytest
+          uv run --no-sync pytest
           tests/ktoolbox/test_webui_auth.py
           tests/ktoolbox/test_webui_config.py
           tests/ktoolbox/test_webui_mcp.py
@@ -160,13 +166,13 @@ jobs:
           --cov-fail-under=100
 
       - name: Run hermetic test suite at 85% coverage
-        run: poetry run pytest --cov --cov-fail-under=85
+        run: uv run --no-sync pytest --cov --cov-fail-under=85
 
       - name: Build documentation without warnings
-        run: poetry run mkdocs build --strict
+        run: uv run --no-sync mkdocs build --strict
 
       - name: Build source and wheel distributions
-        run: poetry build
+        run: uv build
 
   webui:
     runs-on: ubuntu-latest
@@ -220,5 +226,5 @@ jobs:
 
       - name: Verify wheel contains the production WebUI
         run: |
-          poetry build
-          poetry run python scripts/check_webui_wheel.py
+          uv build
+          uv run --no-sync python scripts/check_webui_wheel.py

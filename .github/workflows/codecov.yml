@@ -17,7 +17,7 @@ on:
       - ".github/actions/setup-python/**"
       - ".github/workflows/codecov.yml"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
   pull_request:
     paths:
       - "ktoolbox/**"
@@ -28,7 +28,7 @@ on:
       - ".github/actions/setup-python/**"
       - ".github/workflows/codecov.yml"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
 
 concurrency:
   group: coverage-${{ github.ref }}
@@ -45,11 +45,14 @@ jobs:
         uses: ./.github/actions/setup-python
         with:
           python-version: "3.12"
-          poetry-install-arguments: "--with test,dev --extras urwid --extras webui"
+          uv-sync-arguments: "--group test --group dev --extra urwid --extra webui"
           install-event-loop: "false"
 
+      - name: Check lockfile consistency
+        run: uv lock --check
+
       - name: Run full test suite with coverage
-        run: poetry run pytest -v --capture=sys --cov --cov-report=xml tests/
+        run: uv run --no-sync pytest -v --capture=sys --cov --cov-report=xml tests/
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v6
@@ -91,13 +94,16 @@ jobs:
         uses: ./.github/actions/setup-python
         with:
           python-version: ${{ matrix.python-version }}
-          poetry-install-arguments: "--with test,dev --extras urwid --extras webui"
+          uv-sync-arguments: "--group test --group dev --extra urwid --extra webui"
           install-event-loop: "false"
+
+      - name: Check lockfile consistency
+        run: uv lock --check
 
       - name: Run portable core test suite
         if: runner.os != 'Windows'
         run: >-
-          poetry run pytest -q tests/ktoolbox
+          uv run --no-sync pytest -q tests/ktoolbox
           --ignore-glob="tests/ktoolbox/test_webui_*.py"
           --ignore=tests/ktoolbox/test_auto_sync_routes.py
 
@@ -120,7 +126,7 @@ jobs:
           $failed = @()
           foreach ($testFile in $testFiles) {
             Write-Output "::group::$testFile"
-            $output = & poetry run pytest -q "--allow-hosts=127.0.0.1,localhost,::1" $testFile 2>&1
+            $output = & uv run --no-sync pytest -q "--allow-hosts=127.0.0.1,localhost,::1" $testFile 2>&1
             $exitCode = $LASTEXITCODE
             $output | Write-Output
             Write-Output "::endgroup::"

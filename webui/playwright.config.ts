@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 const e2ePort = process.env.KTOOLBOX_E2E_PORT ?? "8792";
-const e2ePython = process.env.KTOOLBOX_E2E_PYTHON ?? "poetry run python";
+const e2ePython = process.env.KTOOLBOX_E2E_PYTHON ?? "uv run --no-sync python";
 
 export default defineConfig({
   testDir: "./e2e",
