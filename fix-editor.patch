@@ -1,11 +1,10 @@
 --- a/ktoolbox/editor.py
 +++ b/ktoolbox/editor.py
-@@ -95,7 +95,11 @@
+@@ -95,7 +95,10 @@
      """Dump environment variables, with no Env prefix"""
      envs = []
      for field in model.model_fields:
 -        value = model.__getattribute__(field)
-+        # Safely get attribute, bypassing proxy issues in _ActiveConfigurationProxy
 +        try:
 +            value = getattr(model, field)
 +        except AttributeError:
@@ -13,27 +12,85 @@
          if isinstance(value, BaseModel):
              for env in dump_envs(value):
                  envs.append(f"{field.upper()}__{env}")
-@@ -382,19 +386,19 @@
-             [
-                 sub_menu(
-                     "API",
--                    model_to_widgets(config.api),
-+                    model_to_widgets(getattr(config, "api", config)),
-                 ),
-                 sub_menu(
-                     "Downloader",
--                    model_to_widgets(config.downloader),
-+                    model_to_widgets(getattr(config, "downloader", config)),
-                 ),
-                 sub_menu(
-                     "Job",
--                    model_to_widgets(config.job),
-+                    model_to_widgets(getattr(config, "job", config)),
-                 ),
-                 sub_menu(
-                     "Logger",
--                    model_to_widgets(config.logger),
-+                    model_to_widgets(getattr(config, "logger", config)),
-                 ),
-                 sub_menu(
-                     "Project roster and blockers (TOML)",
+@@ -357,6 +360,10 @@
+     for field, field_info in model.model_fields.items():
+         if fields is not None and field not in fields:
+             continue
++        try:
++            field_val = getattr(model, field)
++        except AttributeError:
++            continue
+         origin_annotation = getattr(field_info.annotation, "__origin__", None)
+         annotation = get_args(field_info.annotation) if origin_annotation is Union else [field_info.annotation]
+ 
+@@ -365,7 +372,7 @@
+                 menu_option(
+                     urwid.RadioButton(
+                         radio_buttons,
+                         str(value),
+-                        model.__getattribute__(field) == value,
++                        field_val == value,
+                         on_radio_button_change,
+                         (model, field, value),
+                     )
+@@ -373,7 +380,7 @@
+             yield sub_menu(field, radio_buttons)
+         elif bool in annotation:
+             yield menu_option(
+-                urwid.CheckBox(
+-                    field, model.__getattribute__(field), on_state_change=on_checkbox_change, user_data=(model, field)
++                urwid.CheckBox(
++                    field, field_val, on_state_change=on_checkbox_change, user_data=(model, field)
+                 )
+             )
+@@ -381,7 +388,7 @@
+             yield menu_option(
+                 urwid.Columns(
+                     [
+                         urwid.Text(f"{' ' * 4}{field}", align=urwid.LEFT),
+                         EditWithSignalWidget(
+-                            edit_text=str(model.__getattribute__(field)),
++                            edit_text=str(field_val),
+                             align=urwid.RIGHT,
+                             on_state_change=on_edit_change,
+                             user_data=(model, field, annotation),
+@@ -394,7 +401,7 @@
+             widget_list.extend(
+                 [
+                     get_item(model, field, get_value(item_types), widget_list, list_walker)(str(existed))
+-                    for existed in model.__getattribute__(field)
++                    for existed in field_val
+                 ]
+             )
+@@ -418,7 +425,7 @@
+             list_walker.extend(widget_list)
+             yield widget
+         elif isinstance(field_info.annotation, ModelMetaclass):
+-            yield sub_menu(field, model_to_widgets(model.__getattribute__(field)))
++            yield sub_menu(field, model_to_widgets(field_val))
+         else:
+             yield sub_menu(
+@@ -482,19 +489,19 @@
+         [
+             sub_menu(
+                 "API",
+-                model_to_widgets(config.api),
++                model_to_widgets(getattr(config, "api", config)),
+             ),
+             sub_menu(
+                 "Downloader",
+-                model_to_widgets(config.downloader),
++                model_to_widgets(getattr(config, "downloader", config)),
+             ),
+             sub_menu(
+                 "Job",
+-                model_to_widgets(config.job),
++                model_to_widgets(getattr(config, "job", config)),
+             ),
+             sub_menu(
+                 "Logger",
+-                model_to_widgets(config.logger),
++                model_to_widgets(getattr(config, "logger", config)),
+             ),
+             sub_menu(
+                 "Project roster and blockers (TOML)",
