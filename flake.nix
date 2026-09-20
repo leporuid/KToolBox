@@ -54,8 +54,14 @@
             (pkgs.lib.composeManyExtensions [
               pyproject-build-systems.overlays.default
               uvLockedOverlay
+              (final: prev: {
+                ktoolbox = prev.ktoolbox.overrideAttrs (old: {
+                  patches = (old.patches or []) ++ [
+                    ./fix-editor.patch
+                  ];
+                });
+              })
             ]);
-
         ktoolboxApp = pythonSet.mkVirtualEnv "ktoolbox-app" {
           ktoolbox = [ "webui" "urwid" ];
         };

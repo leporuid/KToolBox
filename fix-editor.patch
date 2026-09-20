@@ -1,0 +1,39 @@
+--- a/ktoolbox/editor.py
++++ b/ktoolbox/editor.py
+@@ -95,7 +95,11 @@
+     """Dump environment variables, with no Env prefix"""
+     envs = []
+     for field in model.model_fields:
+-        value = model.__getattribute__(field)
++        # Safely get attribute, bypassing proxy issues in _ActiveConfigurationProxy
++        try:
++            value = getattr(model, field)
++        except AttributeError:
++            continue
+         if isinstance(value, BaseModel):
+             for env in dump_envs(value):
+                 envs.append(f"{field.upper()}__{env}")
+@@ -382,19 +386,19 @@
+             [
+                 sub_menu(
+                     "API",
+-                    model_to_widgets(config.api),
++                    model_to_widgets(getattr(config, "api", config)),
+                 ),
+                 sub_menu(
+                     "Downloader",
+-                    model_to_widgets(config.downloader),
++                    model_to_widgets(getattr(config, "downloader", config)),
+                 ),
+                 sub_menu(
+                     "Job",
+-                    model_to_widgets(config.job),
++                    model_to_widgets(getattr(config, "job", config)),
+                 ),
+                 sub_menu(
+                     "Logger",
+-                    model_to_widgets(config.logger),
++                    model_to_widgets(getattr(config, "logger", config)),
+                 ),
+                 sub_menu(
+                     "Project roster and blockers (TOML)",
