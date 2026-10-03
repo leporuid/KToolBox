@@ -95,7 +95,7 @@ def dump_envs(model: BaseModel) -> list[str]:
     """Dump environment variables, with no Env prefix"""
     envs = []
     for field in model.model_fields:
-        value = model.__getattribute__(field)
+        value = getattr(model, field)
         if isinstance(value, BaseModel):
             for env in dump_envs(value):
                 envs.append(f"{field.upper()}__{env}")
@@ -200,7 +200,7 @@ def on_add_item(
     :param user_data: (model, field, () -> (default value), item list, () -> (new item), menu widget)
     """
     model, field, get_default, item_list, get_new_widget, widget = user_data
-    values = list(model.__getattribute__(field))
+    values = list(getattr(model, field))
     values.append(get_default())
     model.__setattr__(field, values)
     new_widget = get_new_widget()
@@ -219,7 +219,7 @@ def on_remove_item(
     :param user_data: (model, field, item list, item, menu widget)
     """
     model, field, item_list, item, widget = user_data
-    values = list(model.__getattribute__(field))
+    values = list(getattr(model, field))
     index = item_list.index(item)
     values.pop(index)
     model.__setattr__(field, values)
@@ -238,7 +238,7 @@ def on_item_changed(
     :param user_data: (model, field, (edit widget) -> (value), item list, item)
     """
     model, field, get_value_callback, item_list, item = user_data
-    values = list(model.__getattribute__(field))
+    values = list(getattr(model, field))
     index = item_list.index(item)
     values[index] = get_value_callback(widget)
     model.__setattr__(field, values)
@@ -389,7 +389,7 @@ def model_to_widgets(model: BaseModel, fields: Iterable[str] = None) -> Generato
                     urwid.RadioButton(
                         radio_buttons,
                         str(value),
-                        model.__getattribute__(field) == value,
+                        getattr(model, field) == value,
                         on_radio_button_change,
                         (model, field, value),
                     )
@@ -398,7 +398,7 @@ def model_to_widgets(model: BaseModel, fields: Iterable[str] = None) -> Generato
         elif bool in annotation:
             yield menu_option(
                 urwid.CheckBox(
-                    field, model.__getattribute__(field), on_state_change=on_checkbox_change, user_data=(model, field)
+                    field, getattr(model, field), on_state_change=on_checkbox_change, user_data=(model, field)
                 )
             )
         elif any(map(lambda x: x in annotation, [str, int, float, Path])):
@@ -407,7 +407,7 @@ def model_to_widgets(model: BaseModel, fields: Iterable[str] = None) -> Generato
                     [
                         urwid.Text(f"{' ' * 4}{field}", align=urwid.LEFT),
                         EditWithSignalWidget(
-                            edit_text=str(model.__getattribute__(field)),
+                            edit_text=str(getattr(model, field)),
                             align=urwid.RIGHT,
                             on_state_change=on_edit_change,
                             user_data=(model, field, annotation),
@@ -423,7 +423,7 @@ def model_to_widgets(model: BaseModel, fields: Iterable[str] = None) -> Generato
             widget_list.extend(
                 [
                     get_item(model, field, get_value(item_types), widget_list, list_walker)(str(existed))
-                    for existed in model.__getattribute__(field)
+                    for existed in getattr(model, field)
                 ]
             )
             # noinspection PyTypeChecker
@@ -445,7 +445,7 @@ def model_to_widgets(model: BaseModel, fields: Iterable[str] = None) -> Generato
             list_walker.extend(widget_list)
             yield widget
         elif isinstance(field_info.annotation, ModelMetaclass):
-            yield sub_menu(field, model_to_widgets(model.__getattribute__(field)))
+            yield sub_menu(field, model_to_widgets(getattr(model, field)))
         else:
             yield sub_menu(
                 field,
