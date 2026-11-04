@@ -26,6 +26,7 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       flake-utils,
       uv2nix,
@@ -33,33 +34,59 @@
       pyproject-build-systems,
       ...
     }:
+    let
+      inherit (nixpkgs) lib;
+
+      workspace = uv2nix.lib.workspace.loadWorkspace {
+        workspaceRoot = ./.;
+      };
+
+      pyprojectToml = lib.importTOML ./pyproject.toml;
+
+      # Combine requirements from uv.lock and pyproject.toml
+      effectiveRequiresPython =
+        workspace.requires-python
+        ++ lib.optionals (pyprojectToml ? project.requires-python) (
+          pyproject-nix.lib.pep440.parseVersionConds pyprojectToml.project.requires-python
+        );
+
+      # Pyproject overlay for wheel builds
+      uvLockedOverlay = workspace.mkPyprojectOverlay {
+        sourcePreference = "wheel";
+      };
+    in
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
-        python = pkgs.python311;
+        pkgs = nixpkgs.legacyPackages.${system};
 
-        workspace = uv2nix.lib.workspace.loadWorkspace {
-          workspaceRoot = ./.;
+        # Dynamically select matching Python interpreter from nixpkgs
+        matchingInterpreters = pyproject-nix.lib.util.filterPythonInterpreters {
+          requires-python = effectiveRequiresPython;
+          inherit (pkgs) pythonInterpreters;
         };
+        python = lib.head matchingInterpreters;
 
-        uvLockedOverlay = workspace.mkPyprojectOverlay {
-          sourcePreference = "wheel";
-        };
-
+        # Base Python package set
         pythonSet =
           (pkgs.callPackage pyproject-nix.build.packages {
             inherit python;
           }).overrideScope
-            (pkgs.lib.composeManyExtensions [
+            (lib.composeManyExtensions [
               pyproject-build-systems.overlays.default
               uvLockedOverlay
             ]);
-        ktoolboxApp = pythonSet.mkVirtualEnv "ktoolbox-app" {
-          ktoolbox = [ "webui" "urwid" ];
-        };
 
-        ktoolboxDevEnv = pythonSet.mkVirtualEnv "ktoolbox-dev-env" (
+        # Development environment with editable overlay support
+        editablePythonSet = pythonSet.overrideScope (
+          lib.composeManyExtensions [
+            (workspace.mkEditablePyprojectOverlay {
+              root = "$REPO_ROOT";
+            })
+          ]
+        );
+
+        ktoolboxDevEnv = editablePythonSet.mkVirtualEnv "ktoolbox-dev-env" (
           workspace.deps.all
           // {
             ktoolbox = [ "webui" "urwid" ];
@@ -67,11 +94,15 @@
         );
       in
       {
-        packages.default = ktoolboxApp;
+        packages.default = lib.pipe (pythonSet.mkVirtualEnv "ktoolbox-app" {
+          ktoolbox = [ "webui" "urwid" ];
+        }) [
+          (env: lib.addMetaAttrs { mainProgram = "ktoolbox"; } env)
+        ];
 
         apps.default = {
           type = "app";
-          program = "${ktoolboxApp}/bin/ktoolbox";
+          program = "${self.packages.${system}.default}/bin/ktoolbox";
         };
 
         devShells.default = pkgs.mkShell {
@@ -87,6 +118,7 @@
           };
 
           shellHook = ''
+            export REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
             unset PYTHONPATH
           '';
         };
