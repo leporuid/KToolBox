@@ -38,10 +38,10 @@
       inherit (nixpkgs) lib;
 
       workspace = uv2nix.lib.workspace.loadWorkspace {
-        workspaceRoot = ./.;
+        workspaceRoot = self;
       };
 
-      pyprojectToml = lib.importTOML ./pyproject.toml;
+      pyprojectToml = lib.importTOML (self + "/pyproject.toml");
 
       # Combine requirements from uv.lock and pyproject.toml
       effectiveRequiresPython =
@@ -92,36 +92,52 @@
             ktoolbox = [ "webui" "urwid" ];
           }
         );
-      in
-      {
-        packages.default = lib.pipe (pythonSet.mkVirtualEnv "ktoolbox-app" {
+
+        ktoolboxPackage = lib.pipe (pythonSet.mkVirtualEnv "ktoolbox-app" {
           ktoolbox = [ "webui" "urwid" ];
         }) [
           (env: lib.addMetaAttrs { mainProgram = "ktoolbox"; } env)
         ];
-
-        apps.default = {
-          type = "app";
-          program = "${self.packages.${system}.default}/bin/ktoolbox";
+      in
+      {
+        packages = {
+          ktoolbox = ktoolboxPackage;
+          default = self.packages.${system}.ktoolbox;
         };
 
-        devShells.default = pkgs.mkShell {
-          packages = [
-            ktoolboxDevEnv
-            pkgs.uv
-          ];
-
-          env = {
-            UV_NO_SYNC = "1";
-            UV_PYTHON = python.interpreter;
-            UV_PYTHON_DOWNLOADS = "never";
+        apps = {
+          ktoolbox = {
+            type = "app";
+            program = "${self.packages.${system}.ktoolbox}/bin/ktoolbox";
           };
+          default = self.apps.${system}.ktoolbox;
+        };
 
-          shellHook = ''
-            export REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-            unset PYTHONPATH
-          '';
+        devShells = {
+          ktoolbox = pkgs.mkShell {
+            packages = [
+              ktoolboxDevEnv
+              pkgs.uv
+            ];
+
+            env = {
+              UV_NO_SYNC = "1";
+              UV_PYTHON = python.interpreter;
+              UV_PYTHON_DOWNLOADS = "never";
+            };
+
+            shellHook = ''
+              export REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+              unset PYTHONPATH
+            '';
+          };
+          default = self.devShells.${system}.ktoolbox;
         };
       }
-    );
+    )
+    // {
+      overlays.default = final: prev: {
+        ktoolbox = self.packages.${final.stdenv.hostPlatform.system}.default;
+      };
+    };
 }
