@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
 
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
@@ -28,7 +27,6 @@
     {
       self,
       nixpkgs,
-      flake-utils,
       uv2nix,
       pyproject-nix,
       pyproject-build-systems,
@@ -36,6 +34,14 @@
     }:
     let
       inherit (nixpkgs) lib;
+
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      forAllSystems = lib.genAttrs systems;
 
       workspace = uv2nix.lib.workspace.loadWorkspace {
         workspaceRoot = self;
@@ -54,89 +60,93 @@
       uvLockedOverlay = workspace.mkPyprojectOverlay {
         sourcePreference = "wheel";
       };
-    in
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
 
-        # Dynamically select matching Python interpreter from nixpkgs
-        matchingInterpreters = pyproject-nix.lib.util.filterPythonInterpreters {
-          requires-python = effectiveRequiresPython;
-          inherit (pkgs) pythonInterpreters;
-        };
-        python = lib.head matchingInterpreters;
+      perSystem = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
 
-        # Base Python package set
-        pythonSet =
-          (pkgs.callPackage pyproject-nix.build.packages {
-            inherit python;
-          }).overrideScope
-            (lib.composeManyExtensions [
-              pyproject-build-systems.overlays.default
-              uvLockedOverlay
-            ]);
+          # Dynamically select matching Python interpreter from nixpkgs
+          matchingInterpreters = pyproject-nix.lib.util.filterPythonInterpreters {
+            requires-python = effectiveRequiresPython;
+            inherit (pkgs) pythonInterpreters;
+          };
+          python = lib.head matchingInterpreters;
 
-        # Development environment with editable overlay support
-        editablePythonSet = pythonSet.overrideScope (
-          lib.composeManyExtensions [
-            (workspace.mkEditablePyprojectOverlay {
-              root = "$REPO_ROOT";
-            })
-          ]
-        );
+          # Base Python package set
+          pythonSet =
+            (pkgs.callPackage pyproject-nix.build.packages {
+              inherit python;
+            }).overrideScope
+              (lib.composeManyExtensions [
+                pyproject-build-systems.overlays.default
+                uvLockedOverlay
+              ]);
 
-        ktoolboxDevEnv = editablePythonSet.mkVirtualEnv "ktoolbox-dev-env" (
-          workspace.deps.all
-          // {
+          # Development environment with editable overlay support
+          editablePythonSet = pythonSet.overrideScope (
+            lib.composeManyExtensions [
+              (workspace.mkEditablePyprojectOverlay {
+                root = "$REPO_ROOT";
+              })
+            ]
+          );
+
+          ktoolboxDevEnv = editablePythonSet.mkVirtualEnv "ktoolbox-dev-env" (
+            workspace.deps.all
+            // {
+              ktoolbox = [ "webui" "urwid" ];
+            }
+          );
+
+          ktoolboxPackage = lib.pipe (pythonSet.mkVirtualEnv "ktoolbox-app" {
             ktoolbox = [ "webui" "urwid" ];
-          }
-        );
-
-        ktoolboxPackage = lib.pipe (pythonSet.mkVirtualEnv "ktoolbox-app" {
-          ktoolbox = [ "webui" "urwid" ];
-        }) [
-          (env: lib.addMetaAttrs { mainProgram = "ktoolbox"; } env)
-        ];
-      in
-      {
-        packages = {
-          ktoolbox = ktoolboxPackage;
-          default = self.packages.${system}.ktoolbox;
-        };
-
-        apps = {
-          ktoolbox = {
-            type = "app";
-            program = "${self.packages.${system}.ktoolbox}/bin/ktoolbox";
+          }) [
+            (env: lib.addMetaAttrs { mainProgram = "ktoolbox"; } env)
+          ];
+        in
+        {
+          packages = {
+            ktoolbox = ktoolboxPackage;
+            default = self.packages.${system}.ktoolbox;
           };
-          default = self.apps.${system}.ktoolbox;
-        };
 
-        devShells = {
-          ktoolbox = pkgs.mkShell {
-            packages = [
-              ktoolboxDevEnv
-              pkgs.uv
-            ];
-
-            env = {
-              UV_NO_SYNC = "1";
-              UV_PYTHON = python.interpreter;
-              UV_PYTHON_DOWNLOADS = "never";
+          apps = {
+            ktoolbox = {
+              type = "app";
+              program = "${self.packages.${system}.ktoolbox}/bin/ktoolbox";
             };
-
-            shellHook = ''
-              export REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-              unset PYTHONPATH
-            '';
+            default = self.apps.${system}.ktoolbox;
           };
-          default = self.devShells.${system}.ktoolbox;
-        };
-      }
-    )
-    // {
-      overlays.default = final: prev: {
+
+          devShells = {
+            ktoolbox = pkgs.mkShell {
+              packages = [
+                ktoolboxDevEnv
+                pkgs.uv
+              ];
+
+              env = {
+                UV_NO_SYNC = "1";
+                UV_PYTHON = python.interpreter;
+                UV_PYTHON_DOWNLOADS = "never";
+              };
+
+              shellHook = ''
+                export REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+                unset PYTHONPATH
+              '';
+            };
+            default = self.devShells.${system}.ktoolbox;
+          };
+        }
+      );
+    in
+    {
+      packages = forAllSystems (system: perSystem.${system}.packages);
+      apps = forAllSystems (system: perSystem.${system}.apps);
+      devShells = forAllSystems (system: perSystem.${system}.devShells);
+      overlays.default = final: _prev: {
         ktoolbox = self.packages.${final.stdenv.hostPlatform.system}.default;
       };
     };
