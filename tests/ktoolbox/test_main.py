@@ -185,6 +185,7 @@ def test_terminal_password_refusal_has_no_traceback() -> None:
         text=True,
         timeout=5,
         check=False,
+        start_new_session=True,
     )
 
     assert result.returncode == 2
