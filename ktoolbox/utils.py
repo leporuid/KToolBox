@@ -1,6 +1,7 @@
 import asyncio
 import html
 import logging
+import os
 import re
 import sys
 import warnings
@@ -249,10 +250,11 @@ async def check_for_updates() -> None:
 
         current_version = __version__.lstrip("v")  # Remove 'v' prefix if present
 
+        repo = os.environ.get("KTOOLBOX_UPDATE_REPO", "leporuid/KToolBox").strip("/")
         # First try GitHub API
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get("https://api.github.com/repos/Ljzd-PRO/KToolBox/releases/latest")
+                response = await client.get(f"https://api.github.com/repos/{repo}/releases/latest")
                 if response.status_code == 200:
                     data = response.json()
                     latest_version = data["tag_name"].lstrip("v")
