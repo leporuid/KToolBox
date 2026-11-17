@@ -27,30 +27,49 @@ class LoginResult:
 
 
 class LoginRateLimiter:
-    def __init__(self, *, maximum: int = 5, window_seconds: float = 300) -> None:
+    def __init__(self, *, maximum: int = 5, window_seconds: float = 300, max_keys: int = 1024) -> None:
         self.maximum = maximum
         self.window_seconds = window_seconds
+        self.max_keys = max_keys
         self._attempts: dict[str, deque[float]] = defaultdict(deque)
 
     def check(self, key: str) -> None:
         attempts = self._active_attempts(key)
-        if len(attempts) >= self.maximum:
+        if attempts is not None and len(attempts) >= self.maximum:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many login attempts. Try again later.",
             )
 
     def failure(self, key: str) -> None:
-        self._active_attempts(key).append(time.monotonic())
+        now = time.monotonic()
+        self._prune_expired(now)
+        attempts = self._attempts.get(key)
+        if attempts is None:
+            if len(self._attempts) >= self.max_keys:
+                self._attempts.pop(next(iter(self._attempts)))
+            attempts = deque()
+            self._attempts[key] = attempts
+        attempts.append(now)
 
     def success(self, key: str) -> None:
         self._attempts.pop(key, None)
 
-    def _active_attempts(self, key: str) -> deque[float]:
-        attempts = self._attempts[key]
+    def _prune_expired(self, now: float) -> None:
+        threshold = now - self.window_seconds
+        for k in [key for key, attempts in self._attempts.items() if not attempts or attempts[-1] < threshold]:
+            self._attempts.pop(k, None)
+
+    def _active_attempts(self, key: str) -> deque[float] | None:
+        attempts = self._attempts.get(key)
+        if attempts is None:
+            return None
         threshold = time.monotonic() - self.window_seconds
         while attempts and attempts[0] < threshold:
             attempts.popleft()
+        if not attempts:
+            self._attempts.pop(key, None)
+            return None
         return attempts
 
 

@@ -354,5 +354,5 @@ class KToolBoxCli:
 
         if not result:
             return result.message
-        await JobRunner(job_list=result.data or [], reporter=reporter).start()
-        return None
+        failed = await JobRunner(job_list=result.data or [], reporter=reporter).start()
+        return f"{failed} file downloads failed" if failed else None

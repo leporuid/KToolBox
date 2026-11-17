@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import secrets
-from datetime import datetime, timezone
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, cast
 
@@ -295,13 +296,29 @@ def create_app(
 window.addEventListener("error",function(e){if(e.target&&e.target!==window){r({type:"resource",tag:e.target.tagName,src:e.target.src||e.target.href});}else{r({type:"error",message:String(e.message),source:e.filename,lineno:e.lineno,colno:e.colno,stack:(e.error&&e.error.stack)||""});}},true);
 window.addEventListener("unhandledrejection",function(e){var er=e.reason;r({type:"unhandledrejection",message:(er&&er.message)||String(er),stack:(er&&er.stack)||""});});})();</script>"""
 
+    _max_client_error_bytes = 16 * 1024
+    _max_client_error_file_bytes = 2 * 1024 * 1024
+
+    def _append_client_error(log_path: Path, line: str) -> None:
+        if log_path.exists() and log_path.stat().st_size >= _max_client_error_file_bytes:
+            log_path.replace(log_path.with_suffix(".jsonl.1"))
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(line)
+
     @app.post("/api/v1/client-error", include_in_schema=False)
     async def client_error(request: Request) -> JSONResponse:
         try:
-            body = await request.json()
+            raw = await request.body()
+            if len(raw) > _max_client_error_bytes:
+                return JSONResponse(
+                    {"ok": False, "error": "payload too large"}, status_code=status.HTTP_413_CONTENT_TOO_LARGE
+                )
+            body = json.loads(raw)
+            if not isinstance(body, dict):
+                return JSONResponse({"ok": False, "error": "invalid payload"}, status_code=status.HTTP_400_BAD_REQUEST)
             entry = {**body, "receivedAt": datetime.now(timezone.utc).isoformat()}
-            with open(context.project_root / ".client-errors.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            line = json.dumps(entry, ensure_ascii=False) + "\n"
+            await asyncio.to_thread(_append_client_error, context.project_root / ".client-errors.jsonl", line)
         except Exception:
             pass
         return JSONResponse({"ok": True})

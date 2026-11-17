@@ -1,10 +1,12 @@
 import asyncio
+import time
 from asyncio import CancelledError, Lock
 from collections.abc import Awaitable, Callable
 from functools import cached_property, partial
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import unquote, urlparse
+from weakref import WeakKeyDictionary
 
 import aiofiles  # type: ignore[import-untyped]
 import aiofiles.os  # type: ignore[import-untyped]
@@ -50,7 +52,26 @@ class Downloader:
     :ivar _save_filename: The actual filename for saving.
     """
 
-    wait_lock = Lock()
+    _loop_rate_locks: WeakKeyDictionary[asyncio.AbstractEventLoop, Lock] = WeakKeyDictionary()
+    _loop_next_slot: WeakKeyDictionary[asyncio.AbstractEventLoop, float] = WeakKeyDictionary()
+
+    @classmethod
+    async def _throttle_tps(cls, tps_limit: float) -> None:
+        if tps_limit <= 0:
+            return
+        loop = asyncio.get_running_loop()
+        lock = cls._loop_rate_locks.get(loop)
+        if lock is None:
+            lock = Lock()
+            cls._loop_rate_locks[loop] = lock
+        interval = 1.0 / tps_limit
+        async with lock:
+            now = time.monotonic()
+            scheduled = max(now, cls._loop_next_slot.get(loop, now))
+            cls._loop_next_slot[loop] = scheduled + interval
+        delay = scheduled - now
+        if delay > 0:
+            await asyncio.sleep(delay)
 
     def __init__(
         self,
@@ -255,8 +276,7 @@ class Downloader:
                 message=generate_msg(ret_msg or "Download file already exists", path=save_filepath),
             )
 
-        async with self.wait_lock:
-            await asyncio.sleep(1 / config.downloader.tps_limit)
+        await self._throttle_tps(config.downloader.tps_limit)
         async with self._finished_lock:
             temp_filepath = Path(f"{save_filepath}.{config.downloader.temp_suffix}")
             try:

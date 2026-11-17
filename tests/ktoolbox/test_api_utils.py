@@ -39,12 +39,15 @@ async def test_client_factory_and_scopes() -> None:
     config.api.timeout = 9
     config.api.retry_times = 2
     config.api.retry_interval = 0.5
+    config.api.user_agent = "KToolBox-Test/1.0"
 
     client = create_pawchive_client()
     assert isinstance(client, PawchiveClient)
     assert str(client._base_url) == "https://example.test/custom"
     assert client._timeout == 9
+    assert client._http_client.headers.get("User-Agent") == "KToolBox-Test/1.0"
     await client.aclose()
+    config.api.user_agent = ""
 
     injected = PawchiveClient(base_url="https://example.test")
     async with pawchive_client_scope(injected) as scoped:

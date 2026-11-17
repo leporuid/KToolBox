@@ -1142,3 +1142,60 @@ async def test_scheduler_cancellation_without_running_entry_is_interrupted(tmp_p
     task = await store.set_status(task.id, TaskStatus.running)
     await scheduler._execute(task, snapshot, attempt.id)
     assert (await store.get(task.id)).status is TaskStatus.interrupted
+
+
+@pytest.mark.asyncio
+async def test_scheduler_execute_cleans_up_when_reporter_close_raises(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def failing_close(self: WebTaskReporter) -> None:
+        raise RuntimeError("queue flush failed")
+
+    monkeypatch.setattr(WebTaskReporter, "close", failing_close)
+
+    async def ok_executor(*_args, **_kwargs) -> None:
+        return None
+
+    scheduler, store = await scheduler_parts(tmp_path, ok_executor)
+    first = await store.create(
+        DownloadTaskSpec(service="fanbox", creator_id="one", post_id="42", output=tmp_path / "one")
+    )
+    await scheduler._dispatch_ready_tasks()
+    failed_first = await wait_for_store_status(scheduler, store, first.id, TaskStatus.failed)
+    assert failed_first.error is not None
+    assert not scheduler._running
+    assert (await store.attempts(first.id))[0].status is TaskStatus.failed
+
+    async def fail_executor(*_args, **_kwargs) -> None:
+        raise RuntimeError("executor boom")
+
+    scheduler.executor = fail_executor
+    second = await store.create(
+        DownloadTaskSpec(service="fanbox", creator_id="two", post_id="43", output=tmp_path / "two")
+    )
+    await scheduler._dispatch_ready_tasks()
+    failed_second = await wait_for_store_status(scheduler, store, second.id, TaskStatus.failed)
+    assert failed_second.error == "Unexpected RuntimeError during job generation"
+    assert not scheduler._running
+
+
+@pytest.mark.asyncio
+async def test_client_error_endpoint_limits_and_rotates(tmp_path: Path) -> None:
+    async with task_client(tmp_path, ControlledExecutor()) as (client, _headers):
+        ok_response = await client.post("/api/v1/client-error", json={"type": "error", "message": "boom"})
+        assert ok_response.status_code == 200
+        log_path = tmp_path / ".client-errors.jsonl"
+        assert "boom" in log_path.read_text(encoding="utf-8")
+
+        bad_type = await client.post("/api/v1/client-error", json=["not-a-dict"])
+        assert bad_type.status_code == 400
+
+        oversized = await client.post("/api/v1/client-error", content="x" * (20 * 1024))
+        assert oversized.status_code == 413
+
+        log_path.write_bytes(b"a" * (2 * 1024 * 1024))
+        rotated = await client.post("/api/v1/client-error", json={"type": "error", "message": "after-rotate"})
+        assert rotated.status_code == 200
+        assert (tmp_path / ".client-errors.jsonl.1").exists()
+        assert "after-rotate" in log_path.read_text(encoding="utf-8")

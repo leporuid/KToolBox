@@ -105,7 +105,7 @@ export type TextDocument = {
   revision: string;
 };
 
-export type ProjectDocument = TextDocument & {
+export type ProjectDocument = Omit<TextDocument, "name"> & {
   configuration: {
     schema_version: 5;
     default_output: string;
@@ -269,18 +269,7 @@ export type TaskEvent = {
   created_at: string;
 };
 
-export type TaskAttempt = {
-  id: number;
-  task_id: string;
-  sequence: number;
-  status: TaskStatus;
-  spec: TaskSpec;
-  configuration: Record<string, unknown>;
-  started_at: string;
-  finished_at: string | null;
-  error: string | null;
-  failure?: TaskFailureReport | null;
-};
+export type TaskAttempt = WebUIApiSchemas["TaskAttempt"];
 
 export type TaskArtifact = WebUIApiSchemas["TaskArtifact"];
 

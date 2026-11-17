@@ -389,7 +389,7 @@ class WebUIDatabase:
             await connection.commit()
 
     def _connect(self) -> aiosqlite.Connection:
-        return aiosqlite.connect(self.path)
+        return aiosqlite.connect(self.path, timeout=30.0)
 
     def connect(self) -> aiosqlite.Connection:
         return self._connect()

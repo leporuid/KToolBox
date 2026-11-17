@@ -33,6 +33,7 @@ def create_pawchive_client() -> PawchiveClient:
         max_retries=config.api.retry_times,
         retry_interval=config.api.retry_interval,
         verify=config.ssl_verify,
+        user_agent=config.api.user_agent,
     )
 
 

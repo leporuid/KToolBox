@@ -138,11 +138,24 @@ async def test_invalid_password_hash_fails_startup(tmp_path: Path) -> None:
 
 
 def test_rate_limiter_expires_old_attempts_and_client_identifier_falls_back(monkeypatch) -> None:
-    limiter = LoginRateLimiter(maximum=1, window_seconds=5)
+    now = 10.0
+    monkeypatch.setattr(auth_module.time, "monotonic", lambda: now)
+    limiter = LoginRateLimiter(maximum=2, window_seconds=5, max_keys=2)
+    limiter.check("never-seen")
     limiter._attempts["client"].append(1)
-    monkeypatch.setattr(auth_module.time, "monotonic", lambda: 10.0)
     limiter.check("client")
-    assert not limiter._attempts["client"]
+    assert "client" not in limiter._attempts
+
+    limiter.failure("first")
+    limiter.failure("first")
+    limiter.failure("second")
+    limiter.failure("third")
+    assert "first" not in limiter._attempts
+    assert "third" in limiter._attempts
+
+    now = 20.0
+    limiter.failure("fourth")
+    assert set(limiter._attempts) == {"fourth"}
 
     request = Request(
         {

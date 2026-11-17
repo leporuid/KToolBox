@@ -256,17 +256,25 @@ class TaskScheduler:
             error_text = failure.summary
             reporter.log("error", error_text, failure)
         finally:
-            await reporter.close()
-            await self.store.finish_attempt(attempt_id, final_status, error_text, failure, result)
-            await self.store.set_status(
-                task.id,
-                final_status,
-                error=error_text,
-                failure=failure,
-            )
-            async with self._control_lock:
-                self._running.pop(task.id, None)
-            self._wake.set()
+            try:
+                await reporter.close()
+            except Exception as close_error:
+                if error_text is None:
+                    final_status = TaskStatus.failed
+                    failure = failure_report([classify_failure(close_error, stage=FailureStage.job_generation)])
+                    error_text = failure.summary
+            try:
+                await self.store.finish_attempt(attempt_id, final_status, error_text, failure, result)
+                await self.store.set_status(
+                    task.id,
+                    final_status,
+                    error=error_text,
+                    failure=failure,
+                )
+            finally:
+                async with self._control_lock:
+                    self._running.pop(task.id, None)
+                self._wake.set()
 
 
 def task_resources(spec: TaskSpec) -> TaskResources:

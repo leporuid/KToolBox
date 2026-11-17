@@ -44,7 +44,7 @@
       forAllSystems = lib.genAttrs systems;
 
       workspace = uv2nix.lib.workspace.loadWorkspace {
-        workspaceRoot = self;
+        workspaceRoot = ./.;
       };
 
       pyprojectToml = lib.importTOML (self + "/pyproject.toml");
@@ -89,15 +89,27 @@
               (workspace.mkEditablePyprojectOverlay {
                 root = "$REPO_ROOT";
               })
+              (final: prev: {
+                ktoolbox = prev.ktoolbox.overrideAttrs (old: {
+                  nativeBuildInputs =
+                    (old.nativeBuildInputs or [ ])
+                    ++ final.resolveBuildSystem {
+                      editables = [ ];
+                    };
+                });
+              })
             ]
           );
 
-          ktoolboxDevEnv = editablePythonSet.mkVirtualEnv "ktoolbox-dev-env" (
-            workspace.deps.all
-            // {
-              ktoolbox = [ "webui" "urwid" ];
-            }
-          );
+          ktoolboxDevEnv = editablePythonSet.mkVirtualEnv "ktoolbox-dev-env" {
+            ktoolbox = [
+              "webui"
+              "urwid"
+              "uvloop"
+              "dev"
+              "test"
+            ];
+          };
 
           ktoolboxPackage = lib.pipe (pythonSet.mkVirtualEnv "ktoolbox-app" {
             ktoolbox = [ "webui" "urwid" ];

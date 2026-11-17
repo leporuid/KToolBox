@@ -405,6 +405,7 @@ async def test_full_200_response_restarts_temp(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_incomplete_download_fails_on_size_mismatch(tmp_path: Path) -> None:
     """3.6: Content-Range 声称 10 字节但实际仅 4 字节 → 完整性断言触发失败"""
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             206,
@@ -414,9 +415,7 @@ async def test_incomplete_download_fails_on_size_mismatch(tmp_path: Path) -> Non
         )
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        downloader = Downloader(
-            "https://files.example.test/data/x.bin", tmp_path, client, server_path="/x.bin"
-        )
+        downloader = Downloader("https://files.example.test/data/x.bin", tmp_path, client, server_path="/x.bin")
         result = await run_once(downloader)
 
     assert result.code == RetCodeEnum.GeneralFailure
@@ -435,9 +434,7 @@ async def test_reverse_proxy_replaces_placeholder_safely(tmp_path: Path) -> None
     config.downloader.reverse_proxy = "https://proxy.test/{}"
     try:
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-            downloader = Downloader(
-                "https://files.example.test/data/{x}.bin", tmp_path, client, server_path="/{x}.bin"
-            )
+            downloader = Downloader("https://files.example.test/data/{x}.bin", tmp_path, client, server_path="/{x}.bin")
             result = await run_once(downloader)
     finally:
         config.downloader.reverse_proxy = "{}"
@@ -446,3 +443,27 @@ async def test_reverse_proxy_replaces_placeholder_safely(tmp_path: Path) -> None
     # httpx 会把 URL 中字面 {} 编码为 %7B%7D——断言编码后形式
     assert seen and seen[0].startswith("https://proxy.test/https://files.example.test/data/")
     assert "x" in seen[0]
+
+
+@pytest.mark.asyncio
+async def test_downloader_throttle_handles_zero_and_positive_tps(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return partial_response(request, b"ok")
+
+    prev_tps = config.downloader.tps_limit
+    config.downloader.tps_limit = 0
+    try:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            downloader = Downloader(
+                "https://files.example.test/data/zero.bin", tmp_path, client, server_path="/zero.bin"
+            )
+            result = await run_once(downloader)
+            assert result.code == RetCodeEnum.Success
+
+        config.downloader.tps_limit = 200
+        await asyncio.gather(
+            Downloader._throttle_tps(200),
+            Downloader._throttle_tps(200),
+        )
+    finally:
+        config.downloader.tps_limit = prev_tps
