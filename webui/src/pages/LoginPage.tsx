@@ -19,7 +19,7 @@ import { useTheme } from "../lib/theme";
 
 export function LoginPage() {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, sessionError } = useAuth();
   const theme = useTheme();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -78,6 +78,17 @@ export function LoginPage() {
               <Alert.Description>{t("shell.securityBody")}</Alert.Description>
             </Alert.Content>
           </Alert>
+          {sessionError ? (
+            <Alert status="danger" className="mb-6 rounded-lg">
+              <Alert.Indicator>
+                <ShieldAlert aria-hidden="true" size={18} />
+              </Alert.Indicator>
+              <Alert.Content>
+                <Alert.Title>{t("common.error")}</Alert.Title>
+                <Alert.Description>{errorText(sessionError)}</Alert.Description>
+              </Alert.Content>
+            </Alert>
+          ) : null}
           <form aria-busy={submitting} className="grid gap-5" onSubmit={submit}>
             <FormField
               autoComplete="username"

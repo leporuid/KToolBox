@@ -85,8 +85,10 @@ async def run_webui(
         _print_generated_credentials(generated_credentials)
     print(f"KToolBox WebUI: {url}")
     print("Security warning: HTTP traffic is unencrypted. Use only on a trusted network.")
+    browser_timer: threading.Timer | None = None
     if webui.open_browser:
-        threading.Timer(1.0, webbrowser.open, args=(url,)).start()
+        browser_timer = threading.Timer(1.0, webbrowser.open, args=(url,))
+        browser_timer.start()
 
     class WebUIServer(uvicorn.Server):
         interrupt_count = 0
@@ -162,6 +164,8 @@ async def run_webui(
                     lifespan.logger.disabled = True
             raise KeyboardInterrupt
     finally:
+        if browser_timer is not None:
+            browser_timer.cancel()
         if server.interrupt_count < 2:
             uvicorn_error_logger.removeFilter(cancellation_filter)
             for handler in uvicorn_handlers:

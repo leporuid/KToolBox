@@ -242,7 +242,9 @@ async def creator_search(
         if result == TextEnum.SearchResultEmpty.value:
             result = []
         else:
-            return _command_error("Creator search failed", result)
+            return _command_error(
+                "Creator search failed", result, code=2 if not any((name, creator_id, service)) else 1
+            )
     creators: list[CreatorSummary] = result
     if json_output:
         _print_json(creators)

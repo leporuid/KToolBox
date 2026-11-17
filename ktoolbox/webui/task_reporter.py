@@ -49,7 +49,7 @@ class WebTaskReporter(NullProgressReporter):
         self._speed_samples: deque[tuple[float, int]] = deque()
         self._known_total = 0
         self._has_unknown_total = False
-        self._writes: asyncio.Queue[_ProgressWrite | _ArtifactWrite | None] = asyncio.Queue()
+        self._writes: asyncio.Queue[_ProgressWrite | _ArtifactWrite | None] = asyncio.Queue(maxsize=1024)
         self._writer = self._loop.create_task(
             self._writer_loop(),
             name=f"ktoolbox-webui-reporter-{task_id}",
@@ -245,7 +245,7 @@ class WebTaskReporter(NullProgressReporter):
         )
 
     def artifact_created(self, path: Path) -> None:
-        self._writes.put_nowait(_ArtifactWrite(path))
+        self._put_write(_ArtifactWrite(path), droppable=False)
 
     def log(
         self,
@@ -280,7 +280,7 @@ class WebTaskReporter(NullProgressReporter):
         self.progress.eta_seconds = 0 if self.progress.total_bytes is not None else None
         self._enqueue_progress("task.progress", {"phase": "settled"})
         await self._writes.join()
-        self._writes.put_nowait(None)
+        await self._writes.put(None)
         await self._writer
         if self._write_errors:
             raise self._write_errors[0]
@@ -343,9 +343,21 @@ class WebTaskReporter(NullProgressReporter):
         self._delayed_flush = None
         self._enqueue_progress(event_type, event_data)
 
+    def _put_write(self, item: _ProgressWrite | _ArtifactWrite, *, droppable: bool) -> None:
+        if self._writes.full():
+            if droppable:
+                return
+            try:
+                self._writes.get_nowait()
+                self._writes.task_done()
+            except asyncio.QueueEmpty:
+                pass
+        self._writes.put_nowait(item)
+
     def _enqueue_progress(self, event_type: str, data: dict[str, object]) -> None:
         snapshot = self.progress.model_copy(deep=True)
-        self._writes.put_nowait(_ProgressWrite(event_type, dict(data), snapshot))
+        droppable = event_type == "task.progress" and data.get("phase") not in {"started", "stopped", "settled"}
+        self._put_write(_ProgressWrite(event_type, dict(data), snapshot), droppable=droppable)
 
     async def _writer_loop(self) -> None:
         while True:

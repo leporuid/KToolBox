@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Chip,
   Disclosure,
@@ -354,7 +355,17 @@ export function TasksPage() {
           </p>
           {removing.length === 1 ? (
             <>
-              {cleanupQuery.isLoading ? <PageLoading /> : (
+              {cleanupQuery.isLoading ? <PageLoading /> : cleanupQuery.isError ? (
+                <Alert status="warning" className="rounded-lg">
+                  <Alert.Indicator>
+                    <AlertTriangle aria-hidden="true" size={18} />
+                  </Alert.Indicator>
+                  <Alert.Content>
+                    <Alert.Title>{t("common.error")}</Alert.Title>
+                    <Alert.Description>{errorText(cleanupQuery.error)}</Alert.Description>
+                  </Alert.Content>
+                </Alert>
+              ) : (
                 <Surface className="overflow-hidden rounded-lg border border-border" variant="secondary">
                   <div className="grid gap-3 p-4">
                     <TaskTarget

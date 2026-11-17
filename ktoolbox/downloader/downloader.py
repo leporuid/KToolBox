@@ -13,7 +13,7 @@ import aiofiles.os  # type: ignore[import-untyped]
 import httpx
 from loguru import logger
 from pathvalidate import sanitize_filename
-from tenacity import AsyncRetrying, RetryCallState, retry_if_exception, retry_if_result, wait_fixed
+from tenacity import AsyncRetrying, RetryCallState, retry_if_exception, retry_if_result, wait_exponential_jitter
 from tenacity.stop import stop_after_attempt, stop_never
 
 from ktoolbox._enum import RetCodeEnum
@@ -33,6 +33,24 @@ def _retryable_result(result: DownloaderRet[str]) -> bool:
     if result.status_code is None:
         return True
     return result.status_code == 429 or result.status_code >= 500
+
+
+def _downloader_wait(state: RetryCallState) -> float:
+    outcome = state.outcome
+    response = None
+    if outcome is not None and outcome.failed:
+        response = getattr(outcome.exception(), "response", None)
+    if response is not None:
+        retry_after = response.headers.get("Retry-After")
+        if retry_after:
+            try:
+                return min(max(float(retry_after.strip()), 0.0), 60.0)
+            except ValueError:
+                pass
+    initial = max(float(config.downloader.retry_interval), 0.0)
+    if initial == 0.0:
+        return 0.0
+    return wait_exponential_jitter(initial=initial, max=max(initial * 8.0, 30.0))(state)
 
 
 def _last_result_or_raise(state: RetryCallState) -> DownloaderRet[str]:
@@ -207,7 +225,7 @@ class Downloader:
             stop=(
                 stop_never if config.downloader.retry_stop_never else stop_after_attempt(config.downloader.retry_times)
             ),
-            wait=wait_fixed(config.downloader.retry_interval),
+            wait=_downloader_wait,
             retry=retry_if_result(_retryable_result)
             | retry_if_exception(lambda error: isinstance(error, httpx.HTTPError)),
             before_sleep=partial(self._before_retry, progress=progress),

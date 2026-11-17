@@ -467,3 +467,34 @@ async def test_downloader_throttle_handles_zero_and_positive_tps(tmp_path: Path)
         )
     finally:
         config.downloader.tps_limit = prev_tps
+
+
+def test_downloader_wait_honors_retry_after_and_backoff() -> None:
+    from tenacity import RetryCallState
+
+    from ktoolbox.downloader.downloader import _downloader_wait
+
+    prev_interval = config.downloader.retry_interval
+    try:
+        config.downloader.retry_interval = 0.25
+        req = httpx.Request("GET", "https://files.example.test/a.bin")
+
+        state_retry_after = RetryCallState(None, None, (), {})
+        err_resp = httpx.Response(429, headers={"Retry-After": "2.5"}, request=req)
+        err = httpx.HTTPStatusError("429", request=req, response=err_resp)
+        state_retry_after.set_exception((type(err), err, None))
+        assert _downloader_wait(state_retry_after) == 2.5
+
+        state_bad_retry_after = RetryCallState(None, None, (), {})
+        bad_resp = httpx.Response(429, headers={"Retry-After": "bad"}, request=req)
+        bad_err = httpx.HTTPStatusError("429", request=req, response=bad_resp)
+        state_bad_retry_after.set_exception((type(bad_err), bad_err, None))
+        delay = _downloader_wait(state_bad_retry_after)
+        assert delay >= 0
+
+        config.downloader.retry_interval = 0
+        state_zero = RetryCallState(None, None, (), {})
+        state_zero.set_result(partial_response(req))
+        assert _downloader_wait(state_zero) == 0.0
+    finally:
+        config.downloader.retry_interval = prev_interval

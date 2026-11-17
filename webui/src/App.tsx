@@ -6,6 +6,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { AppShell } from "./components/AppShell";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { StartupNoticeCenter } from "./components/StartupNoticeCenter";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { normalizeLanguage, reactAriaLocale } from "./lib/i18n";
@@ -39,7 +40,11 @@ function AuthenticatedApplication() {
     );
   }
   if (!session) {
-    return <LoginPage />;
+    return (
+      <ErrorBoundary label="login">
+        <LoginPage />
+      </ErrorBoundary>
+    );
   }
   return (
     <RealtimeProvider>
@@ -67,7 +72,9 @@ function AuthenticatedApplication() {
             </Route>
           </Routes>
         </Suspense>
-        <StartupNoticeCenter />
+        <ErrorBoundary label="startup-notice">
+          <StartupNoticeCenter />
+        </ErrorBoundary>
       </SensitiveMediaProvider>
     </RealtimeProvider>
   );

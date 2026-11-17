@@ -101,11 +101,20 @@ export function RemotePathField({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const browseButton = useRef<HTMLButtonElement>(null);
+  const focusTimerRef = useRef<number | null>(null);
   const browseLabel = t("pathPicker.browse", { label });
+
+  useEffect(() => () => {
+    if (focusTimerRef.current !== null) window.clearTimeout(focusTimerRef.current);
+  }, []);
 
   function closePicker() {
     setOpen(false);
-    window.setTimeout(() => browseButton.current?.focus(), 0);
+    if (focusTimerRef.current !== null) window.clearTimeout(focusTimerRef.current);
+    focusTimerRef.current = window.setTimeout(() => {
+      focusTimerRef.current = null;
+      browseButton.current?.focus();
+    }, 0);
   }
 
   return (

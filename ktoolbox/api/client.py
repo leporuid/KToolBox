@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import TypeVar
 from urllib.parse import quote
 
@@ -143,6 +146,31 @@ class PawchiveClient:
     def _segment(value: str) -> str:
         return quote(value, safe="")
 
+    @staticmethod
+    def _parse_retry_after(header_value: str | None) -> float | None:
+        if not header_value:
+            return None
+        stripped = header_value.strip()
+        try:
+            return min(max(float(stripped), 0.0), 60.0)
+        except ValueError:
+            pass
+        try:
+            target = parsedate_to_datetime(stripped)
+        except (TypeError, ValueError, IndexError):
+            return None
+        if target.tzinfo is None:
+            target = target.replace(tzinfo=timezone.utc)
+        delay = (target - datetime.now(timezone.utc)).total_seconds()
+        return min(max(delay, 0.0), 60.0)
+
+    def _retry_delay(self, attempt: int, response: httpx.Response | None = None) -> float:
+        retry_after = self._parse_retry_after(response.headers.get("Retry-After") if response is not None else None)
+        if retry_after is not None:
+            return retry_after
+        base = min(self._retry_interval * (2**attempt), 60.0)
+        return random.uniform(base, min(base * 1.25, 60.0)) if base > 0 else 0.0
+
     async def _request(
         self,
         method: str,
@@ -167,13 +195,14 @@ class PawchiveClient:
             except httpx.TransportError as error:
                 if attempt == self._max_retries:
                     raise PawchiveTransportError(method, url, error) from error
-                await self._sleep(self._retry_interval)
+                await self._sleep(self._retry_delay(attempt))
                 continue
 
             retryable_status = response.status_code == 429 or response.status_code >= 500
             if retryable_status and attempt < self._max_retries:
+                delay = self._retry_delay(attempt, response)
                 await response.aclose()
-                await self._sleep(self._retry_interval)
+                await self._sleep(delay)
                 continue
             if response.status_code not in expected_statuses:
                 self._raise_http_error(response)

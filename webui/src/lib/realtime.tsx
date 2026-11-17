@@ -278,6 +278,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       try {
         await api<Session>("/session");
       } catch (error) {
+        if (!active) return;
         if (error instanceof ApiError && error.status === 401) {
           source?.close();
           invalidateSession();

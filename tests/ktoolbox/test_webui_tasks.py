@@ -1199,3 +1199,20 @@ async def test_client_error_endpoint_limits_and_rotates(tmp_path: Path) -> None:
         assert rotated.status_code == 200
         assert (tmp_path / ".client-errors.jsonl.1").exists()
         assert "after-rotate" in log_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.asyncio
+async def test_reporter_bounded_queue_drops_stale_progress_and_evicts_on_critical(tmp_path: Path) -> None:
+    database = WebUIDatabase(tmp_path / "reporter.sqlite3")
+    await database.initialize()
+    store = TaskStore(database)
+    task = await store.create(
+        DownloadTaskSpec(service="fanbox", creator_id="one", post_id="42", output=tmp_path / "one")
+    )
+    reporter = WebTaskReporter(task.id, store)
+    for _ in range(1100):
+        reporter._enqueue_progress("task.progress", {"phase": "downloading"})
+    assert reporter._writes.full()
+    reporter.artifact_created(tmp_path / "one" / "file.bin")
+    assert reporter._writes.full()
+    await reporter.close()

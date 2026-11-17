@@ -6,6 +6,7 @@ import type { Session } from "../types";
 type AuthContextValue = {
   session: Session | null;
   loading: boolean;
+  sessionError: Error | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   invalidateSession: () => void;
@@ -16,15 +17,24 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<Error | null>(null);
 
   useEffect(() => {
     let active = true;
     api<Session>("/session")
       .then((value) => {
-        if (active) setSession(value);
+        if (active) {
+          setSession(value);
+          setSessionError(null);
+        }
       })
       .catch((error: unknown) => {
-        if (!(error instanceof ApiError && error.status === 401)) throw error;
+        if (!active) return;
+        if (error instanceof ApiError && error.status === 401) {
+          setSessionError(null);
+          return;
+        }
+        setSessionError(error instanceof Error ? error : new Error(String(error)));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -38,12 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       loading,
+      sessionError,
       login: async (username, password) => {
         const next = await api<Session>("/session/login", {
           method: "POST",
           body: { username, password },
         });
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        setSessionError(null);
         setSession(next);
       },
       logout: async () => {
@@ -57,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       invalidateSession: () => setSession(null),
     }),
-    [loading, session],
+    [loading, session, sessionError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

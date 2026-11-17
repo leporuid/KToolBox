@@ -297,7 +297,11 @@ def test_query_commands_handle_empty_results_and_errors(capsys) -> None:
     assert "No creators found" in capsys.readouterr().out
 
     with patch("ktoolbox.cli_app.KToolBoxCli.search_creator", new=AsyncMock(return_value="offline")):
-        assert app(["creator", "search"]) == 1
+        assert app(["creator", "search", "--name", "Example"]) == 1
+    assert "Creator search failed" in capsys.readouterr().err
+
+    with patch("ktoolbox.cli_app.KToolBoxCli.search_creator", new=AsyncMock(return_value="missing selector")):
+        assert app(["creator", "search"]) == 2
     assert "Creator search failed" in capsys.readouterr().err
 
     with patch("ktoolbox.cli_app.KToolBoxCli.search_creator_post", new=AsyncMock(return_value=[post])):

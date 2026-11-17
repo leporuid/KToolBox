@@ -242,7 +242,41 @@ async def test_retries_transport_429_and_server_errors() -> None:
         assert await client.list_recent_posts() == []
     assert calls == 4
     assert sleep.await_count == 3
-    sleep.assert_awaited_with(0.25)
+    waits = [call.args[0] for call in sleep.await_args_list]
+    assert 0.25 <= waits[0] <= 0.3125
+    assert 0.50 <= waits[1] <= 0.625
+    assert 1.00 <= waits[2] <= 1.25
+
+
+@pytest.mark.asyncio
+async def test_retry_respects_retry_after_and_zero_interval() -> None:
+    calls = 0
+    sleep = AsyncMock()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(429, headers={"Retry-After": "1.5"}, request=request)
+        if calls == 2:
+            return httpx.Response(503, headers={"Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT"}, request=request)
+        if calls == 3:
+            return httpx.Response(503, headers={"Retry-After": "Wed, 21 Oct 2015 07:28:00"}, request=request)
+        if calls == 4:
+            return httpx.Response(503, headers={"Retry-After": "invalid-date"}, request=request)
+        return response(request, json=[])
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = PawchiveClient(
+            base_url=BASE_URL,
+            http_client=http_client,
+            max_retries=4,
+            retry_interval=0,
+            sleep=sleep,
+        )
+        assert await client.list_recent_posts() == []
+    waits = [call.args[0] for call in sleep.await_args_list]
+    assert waits == [1.5, 0.0, 0.0, 0.0]
 
 
 @pytest.mark.asyncio
