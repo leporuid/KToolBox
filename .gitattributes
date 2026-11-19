@@ -1,3 +1,3 @@
-webui/src/generated/** linguist-generated=true
-webui/src/locales/** linguist-generated=true
-ktoolbox/webui/static/** linguist-vendored=true
+webui/** linguist-vendored
+webui/** -linguist-detectable
+ktoolbox/webui/static/** linguist-vendored
