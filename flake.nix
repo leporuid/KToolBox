@@ -135,6 +135,7 @@
             ktoolbox = pkgs.mkShell {
               packages = [
                 ktoolboxDevEnv
+                pkgs.nodejs_24
                 pkgs.uv
               ];
 
