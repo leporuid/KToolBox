@@ -111,7 +111,62 @@
             ];
           };
 
-          ktoolboxPackage = lib.pipe (pythonSet.mkVirtualEnv "ktoolbox-app" {
+          # Frontend bundle built hermetically via buildNpmPackage + importNpmLock
+          ktoolboxWebui = pkgs.buildNpmPackage {
+            pname = "ktoolbox-webui";
+            version = pyprojectToml.project.version or "0.0.0";
+            src = lib.fileset.toSource {
+              root = ./webui;
+              fileset = lib.fileset.unions [
+                ./webui/index.html
+                ./webui/package.json
+                ./webui/package-lock.json
+                ./webui/tsconfig.json
+                ./webui/tsconfig.app.json
+                ./webui/tsconfig.node.json
+                ./webui/vite.config.ts
+                ./webui/src
+              ];
+            };
+            nodejs = pkgs.nodejs_24;
+            npmDeps = pkgs.importNpmLock {
+              npmRoot = ./webui;
+            };
+            npmConfigHook = pkgs.importNpmLock.npmConfigHook;
+            npmFlags = [ "--ignore-scripts" ];
+            env = {
+              PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+              PUPPETEER_SKIP_DOWNLOAD = "true";
+            };
+            buildPhase = ''
+              runHook preBuild
+              npx tsc -b
+              npx vite build --outDir build-dist
+              runHook postBuild
+            '';
+            installPhase = ''
+              runHook preInstall
+              mkdir -p "$out"
+              cp -r build-dist/* "$out/"
+              runHook postInstall
+            '';
+          };
+
+          # Inject freshly built Nix WebUI assets into the packaged uv2nix build
+          packagedPythonSet = pythonSet.overrideScope (
+            _final: prev: {
+              ktoolbox = prev.ktoolbox.overrideAttrs (old: {
+                postPatch = (old.postPatch or "") + ''
+                  mkdir -p ktoolbox/webui
+                  rm -rf ktoolbox/webui/static
+                  cp -r ${ktoolboxWebui} ktoolbox/webui/static
+                  chmod -R u+w ktoolbox/webui/static
+                '';
+              });
+            }
+          );
+
+          ktoolboxPackage = lib.pipe (packagedPythonSet.mkVirtualEnv "ktoolbox-app" {
             ktoolbox = [ "webui" "urwid" ];
           }) [
             (env: lib.addMetaAttrs { mainProgram = "ktoolbox"; } env)
@@ -120,6 +175,7 @@
         {
           packages = {
             ktoolbox = ktoolboxPackage;
+            webui = ktoolboxWebui;
             default = self.packages.${system}.ktoolbox;
           };
 
